@@ -118,7 +118,7 @@ class Move:
             return self.points + (self.submove.get_total_points() * 0.75)
 
     def describe(self):
-        description = "{0},{1}({2})<->{3},{4}({5}) {6}pts".format(
+        description = "{0},{1}({2})<->{3},{4}({5}) {6:0.1f}pts".format(
             self.x1 + 1, self.y1 + 1, self.color1.name[0],
             self.x2 + 1, self.y2 + 1, self.color2.name[0],
             self.points)
@@ -394,6 +394,9 @@ class Board:
         # If more than one color is cleared, there's a 30 point bonus.
         if colors_cleared > 1:
             points += 30
+
+        # Add some probabilitiy points based upon the number of gems cleared.
+        points += (1.0 - (0.8 ** gems_cleared)) * gems_cleared
 
         # Not possible to gain more than 60 points on a single clear.
         if points > 60:
