@@ -379,9 +379,11 @@ class Board:
             if self.grid[x][y].cleared:
                 removed[self.grid[x][y].color] += 1
         colors_cleared = 0
+        gems_cleared = 0
         points = 0
         for color, count in removed.items():
             if count > 0:
+                gems_cleared += count
                 colors_cleared += 1
             if count == 3:
                 points += 10
@@ -392,6 +394,7 @@ class Board:
         # If more than one color is cleared, there's a 30 point bonus.
         if colors_cleared > 1:
             points += 30
+
         # Not possible to gain more than 60 points on a single clear.
         if points > 60:
             points = 60
@@ -430,7 +433,7 @@ class Board:
 
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
-parser.add_argument('--depth', type='int', default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
+parser.add_argument('--depth', type=int, default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
 args = parser.parse_args()
 
