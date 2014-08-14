@@ -110,12 +110,12 @@ class Move:
         self.points = 0
         self.submove = None
 
-    def get_total_points(self):
+    def get_total_points(self, depth_factor=0.75):
         if self.submove is None:
             return self.points
         else:
             # Until something is accounted for unknown blocks creating matches, we need t oslightly favor clearing things earlier.
-            return self.points + (self.submove.get_total_points() * 0.75)
+            return self.points + (self.submove.get_total_points() * depth_factor)
 
     def describe(self):
         description = "{0},{1}({2})<->{3},{4}({5}) {6:0.1f}pts".format(
@@ -439,6 +439,7 @@ class Board:
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
 parser.add_argument('--depth', type=int, default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
+parser.add_argument('--fast0', action='store_true', help='If best move is a zero point move, perform the next submove without recalculating. Runs faster, but at expensive of highe raverage points.')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
 parser.add_argument('--simulate', action='store_true', help='Enable simulation mode. Script will create a new random board and simulate best moves and results.')
 args = parser.parse_args()
@@ -467,13 +468,18 @@ if args.simulate:
         if move.get_total_points() == 0.0:
             print("ERROR: Calculated move sequence gives zero points.")
             sys.exit(1)
-        total_moves += 1
-        board.swap(move)
-        points, sub_move = board.simulate(fillrandom=True, probabilitypoints=False)
-        total_points += points
-        print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(points, (float(total_points) / total_moves), total_moves))
+        points = 0
+        while points == 0:
+            total_moves += 1
+            board.swap(move)
+            points, sub_move = board.simulate(fillrandom=True, probabilitypoints=False)
+            total_points += points
+            print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(points, (float(total_points) / total_moves), total_moves))
+            if args.fast0:
+                move = move.submove
+            else:
+                points = -1
 
-    
 
 
 
@@ -528,7 +534,7 @@ board = Board(xoffset, yoffset)
 print("The starting grid appears to be:")
 board.print_grid()
 
-for i in range(remaining_energy, 0, -1):
+while remaining_energy > 0:
     retry_count = 0
     while True:
         if not board.update():
@@ -543,21 +549,30 @@ for i in range(remaining_energy, 0, -1):
 
     print("Calculating move...")
     startime = time.time()
-    if i < args.depth:
-        move = board.best_move(depth=i)
+    if remaining_energy < args.depth:
+        move = board.best_move(depth=remaining_energy)
     else:
         move = board.best_move(args.depth)
-    print("Best Move Sequence: {0}".format(move.describe()))
-    if move.get_total_points() == 0.0:
-        print("ERROR: Calculated move sequencegives zero points.")
-        sys.exit(1)
-    if i <= args.depth and move.get_total_points() < 1.0:
-        print("Not using last energy, no move(s) gives points.")
-        break
-    board.do_swap(move)
     duration = time.time() - startime
     print("Calculating best move took: {0:.3f}s".format(duration))
-    #blah = input("Press enter to calculate next move.")
-    print("Waiting for move to complete...")
-    if i > 1:
-        time.sleep(1.0)
+    print("Best Move Sequence: {0}".format(move.describe()))
+    if move.get_total_points() == 0.0:
+        print("ERROR: Calculated move sequence gives zero points.")
+        sys.exit(1)
+    if remaining_energy <= args.depth and move.get_total_points() < 1.0:
+        print("Not using last energy, no move give points.")
+        break
+    lastmove_points = 0
+    # Iterate over moves until one is performed that is expected to give >0 points
+    while lastmove_points == 0:
+        remaining_energy -= 1
+        board.do_swap(move)
+        #blah = input("Press enter to calculate next move.")
+        print("Waiting for move to complete...")
+        if i > 1:
+            time.sleep(1.0)
+        if args.fast0:
+            lastmove_points = move.points
+            move = move.submove
+        else:
+            lastmove_points = -1
