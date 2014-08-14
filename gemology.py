@@ -430,6 +430,7 @@ class Board:
 
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
+parser.add_argument('--depth', type='int', default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
 args = parser.parse_args()
 
@@ -497,16 +498,17 @@ for i in range(remaining_energy, 0, -1):
         else:
             break
 
+    print("Calculating move...")
     startime = time.time()
-    if i < 3:
+    if i < args.depth:
         move = board.best_move(depth=i)
     else:
-        move = board.best_move()
+        move = board.best_move(args.depth)
     print("Best Move Sequence: {0}".format(move.describe()))
     if move.get_total_points() == 0.0:
         print("ERROR: Calculated move sequencegives zero points.")
         sys.exit(1)
-    if i <= 2 and move.get_total_points() < 1.0:
+    if i <= args.depth and move.get_total_points() < 1.0:
         print("Not using last energy, no move(s) gives points.")
         break
     board.do_swap(move)
