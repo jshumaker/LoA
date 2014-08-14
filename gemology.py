@@ -270,7 +270,7 @@ class Board:
             if args.debug:
                 logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
             newboard = deepcopy(self)
-            newboard.swap(move.x1,move.y1, move.x2,move.y2)
+            newboard.swap(move)
             points, submove  = newboard.simulate(depth)
             move.points = points
             move.submove = submove
@@ -305,12 +305,12 @@ class Board:
         #print("Clicking: {0}".format((x2, y2)))
         click_mouse(x2, y2)
 
-    def swap(self, x1, y1, x2, y2):
-        tempgem = self.grid[x1][y1]
-        self.grid[x1][y1] = self.grid[x2][y2]
-        self.grid[x2][y2] = tempgem
+    def swap(self, swap):
+        tempgem = self.grid[swap.x1][swap.y1]
+        self.grid[swap.x1][swap.y1] = self.grid[swap.x2][swap.y2]
+        self.grid[swap.x2][swap.y2] = tempgem
 
-    def simulate(self, depth=1):
+    def simulate(self, depth=1, fillrandom=False, probabilitypoints=True):
         """
         Estimate how many points the current board would generate.
         depth: How many moves deep to simulate. If greater than 1, then additional best moves will be calculated on each simulated result.
@@ -318,25 +318,24 @@ class Board:
         points =  0.0
         sub_move = None
 
-        newboard = deepcopy(self)
         if args.debug:
-            logging.debug("Simulating board:\n{0}".format(newboard.describe_grid()))
-        firstpoints = newboard.clear()
+            logging.debug("Simulating board:\n{0}".format(self.describe_grid()))
+        firstpoints = self.clear(probabilitypoints)
 
         simpoints = 0
         newpoints = firstpoints
         while (newpoints > 0):
             simpoints += newpoints
-            newboard.drop()
-            newboard.fill()
-            newpoints = newboard.clear()
+            self.drop()
+            self.fill(fillrandom)
+            newpoints = self.clear(probabilitypoints)
         points += float(simpoints)
         if args.debug:
-            logging.debug("Points: {0} End Board:\n{1}".format(points, newboard.describe_grid()))
+            logging.debug("Points: {0} End Board:\n{1}".format(points, self.describe_grid()))
 
         if depth > 1:
             # determine the next best move.
-            sub_move = newboard.best_move(depth - 1)
+            sub_move = self.best_move(depth - 1)
 
         return points, sub_move
 
@@ -349,7 +348,7 @@ class Board:
         else:
             return 0.0
 
-    def clear(self):
+    def clear(self, probabilitypoints=True):
         """
         Mark gems as cleared and count points.
         """
@@ -395,8 +394,9 @@ class Board:
         if colors_cleared > 1:
             points += 30
 
-        # Add some probabilitiy points based upon the number of gems cleared.
-        points += (1.0 - (0.8 ** gems_cleared)) * gems_cleared
+        if probabilitypoints:
+            # Add some probabilitiy points based upon the number of gems cleared.
+            points += (1.0 - (0.8 ** gems_cleared)) * gems_cleared
 
         # Not possible to gain more than 60 points on a single clear.
         if points > 60:
@@ -424,21 +424,58 @@ class Board:
                     print("ERROR: Grid was not fully cleared.")
                     sys.exit(1)
 
-    def fill(self):
+    def fill(self, fillrandom=False):
         """
         Fill the board with random gems.
         """
         for x, y in [(x,y) for x in range(5) for y in range(5)]:
             if self.grid[x][y] is None:
-                #self.grid[x][y] = Gem(GemColor(random.randint(1, 5)))
-                self.grid[x][y] = Gem(GemColor.Unknown)
+                if fillrandom:
+                    self.grid[x][y] = Gem(GemColor(random.randint(1, 5)))
+                else:
+                    self.grid[x][y] = Gem(GemColor.Unknown)
 
 
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
 parser.add_argument('--depth', type=int, default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
+parser.add_argument('--simulate', action='store_true', help='Enable simulation mode. Script will create a new random board and simulate best moves and results.')
 args = parser.parse_args()
+
+
+
+if args.simulate:
+    # Do a simulation run
+    randomgrid = []
+    for x in range(5):
+        column = []
+        for y in range(5):
+            column.append(Gem(GemColor(random.randint(1, 5))))
+        randomgrid.append(column)
+    board = Board(0,0,randomgrid)
+    # Normalize the board so nothing is ready to clear.
+    board.simulate(fillrandom=True, probabilitypoints=False)
+    print("Random starting grid:")
+    board.print_grid()
+
+    total_points = 0
+    total_moves = 0
+    while True:
+        move = board.best_move(args.depth)
+        print("Best Move Sequence: {0}".format(move.describe()))
+        if move.get_total_points() == 0.0:
+            print("ERROR: Calculated move sequence gives zero points.")
+            sys.exit(1)
+        total_moves += 1
+        board.swap(move)
+        points, sub_move = board.simulate(fillrandom=True, probabilitypoints=False)
+        total_points += points
+        print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(points, (float(total_points) / total_moves), total_moves))
+
+    
+
+
 
 gdi= windll.LoadLibrary("c:\\windows\\system32\\gdi32.dll")
 dc = windll.user32.GetDC(0)
