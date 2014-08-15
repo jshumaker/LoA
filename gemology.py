@@ -293,7 +293,7 @@ class Board:
 
         return best_move
 
-    def do_swap(self, swap):
+    def do_swap(self, swap, delay):
         
         x1 = swap.x1 * 50 + self.xoffset
         y1 = swap.y1 * 50 + self.yoffset
@@ -301,7 +301,7 @@ class Board:
         y2 = swap.y2 * 50 + self.yoffset
         #print("Clicking: {0}".format((x1, y1)))
         click_mouse(x1, y1)
-        time.sleep(1.000)
+        time.sleep(delay)
         #print("Clicking: {0}".format((x2, y2)))
         click_mouse(x2, y2)
 
@@ -439,8 +439,9 @@ class Board:
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
 parser.add_argument('--depth', type=int, default=2, help='How many moves deep to predict. Defaults to 2. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
+parser.add_argument('--delay', type=float, default=1.5, help='How many seconds to wait after clicking. Default is 1.5. For slow connections or computers, increase this value.')
 parser.add_argument('--fast0', action='store_true', help='If best move is a zero point move, perform the next submove without recalculating. Runs faster, but at expensive of highe raverage points.')
-parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
+parser.add_argument('--debug', action='store_true', help='Enable debug mode, a gemology.log file will be output with details on the tested moves.')
 parser.add_argument('--simulate', action='store_true', help='Enable simulation mode. Script will create a new random board and simulate best moves and results.')
 args = parser.parse_args()
 
@@ -481,8 +482,6 @@ if args.simulate:
                 points = -1
 
 
-
-
 gdi= windll.LoadLibrary("c:\\windows\\system32\\gdi32.dll")
 dc = windll.user32.GetDC(0)
 
@@ -490,25 +489,6 @@ loglevel = logging.INFO
 if args.debug:
     loglevel = logging.DEBUG
 logging.basicConfig(filename='gemology.log',level=loglevel)
-
-
-#EnumWindows = windll.user32.EnumWindows
-#EnumWindowsProc = WINFUNCTYPE(c_bool, POINTER(c_int), POINTER(c_int))
-#GetWindowText = windll.user32.GetWindowTextW
-#GetWindowTextLength = windll.user32.GetWindowTextLengthW
-#IsWindowVisible = windll.user32.IsWindowVisible
-# 
-#titles = []
-#def foreach_window(hwnd, lParam):
-#    if IsWindowVisible(hwnd):
-#        length = GetWindowTextLength(hwnd)
-#        buff = create_unicode_buffer(length + 1)
-#        GetWindowText(hwnd, buff, length + 1)
-#        if "League of Angels" in buff.value:
-#            print("hwnd: {0} title: {1}".format(hwnd, buff.value))
-#        titles.append(buff.value)
-#    return True
-#EnumWindows(EnumWindowsProc(foreach_window), 0)
 
 
 class _point_t(Structure):
@@ -534,6 +514,7 @@ board = Board(xoffset, yoffset)
 print("The starting grid appears to be:")
 board.print_grid()
 
+startime = time.time()
 while remaining_energy > 0:
     retry_count = 0
     while True:
@@ -548,12 +529,12 @@ while remaining_energy > 0:
             break
 
     print("Calculating move...")
-    startime = time.time()
+    movestartime = time.time()
     if remaining_energy < args.depth:
         move = board.best_move(depth=remaining_energy)
     else:
         move = board.best_move(args.depth)
-    duration = time.time() - startime
+    duration = time.time() - movestartime
     print("Calculating best move took: {0:.3f}s".format(duration))
     print("Best Move Sequence: {0}".format(move.describe()))
     if move.get_total_points() == 0.0:
@@ -566,13 +547,16 @@ while remaining_energy > 0:
     # Iterate over moves until one is performed that is expected to give >0 points
     while lastmove_points == 0:
         remaining_energy -= 1
-        board.do_swap(move)
+        board.do_swap(move,  args.delay)
         #blah = input("Press enter to calculate next move.")
         print("Waiting for move to complete...")
         if remaining_energy > 1:
-            time.sleep(1.0)
+            time.sleep(args.delay)
         if args.fast0:
             lastmove_points = move.points
             move = move.submove
         else:
             lastmove_points = -1
+
+duration = time.time() - startime
+print("Moves complete, total time: {0:.3f}s".format(duration))
