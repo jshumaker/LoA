@@ -569,7 +569,7 @@ while remaining_energy > 0:
         board.do_swap(move)
         #blah = input("Press enter to calculate next move.")
         print("Waiting for move to complete...")
-        if i > 1:
+        if remaining_energy > 1:
             time.sleep(1.0)
         if args.fast0:
             lastmove_points = move.points
