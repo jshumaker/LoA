@@ -10,6 +10,9 @@ gemology.py
 -----------
 Recognizes a gemology board, calculates and performs best move.
 
+Requires Python 3.x
+https://www.python.org/downloads/
+
 Requires pywin32, download tha appropriate version for your version of python:
 http://sourceforge.net/projects/pywin32/files/pywin32/
 
