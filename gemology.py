@@ -438,7 +438,7 @@ class Board:
 
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
-parser.add_argument('--depth', type=int, default=3, help='How many moves deep to predict. Defaults to 3. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
+parser.add_argument('--depth', type=int, default=2, help='How many moves deep to predict. Defaults to 2. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
 parser.add_argument('--fast0', action='store_true', help='If best move is a zero point move, perform the next submove without recalculating. Runs faster, but at expensive of highe raverage points.')
 parser.add_argument('--debug', action='store_true', help='Enable debug mode.')
 parser.add_argument('--simulate', action='store_true', help='Enable simulation mode. Script will create a new random board and simulate best moves and results.')
