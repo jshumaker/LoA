@@ -4,9 +4,8 @@ import math
 import itertools
 import random
 import sys
-import os
 import logging
-from PIL import ImageGrab, Image
+from PIL import ImageGrab
 from enum import Enum
 from copy import deepcopy
 import win32api
@@ -14,22 +13,27 @@ import win32con
 import argparse
 
 
-
-class color:
+class Color:
     def __init__(self, r, g, b, a):
         self.r = r
         self.g = g
         self.b = b
         self.a = a
         # Calculate the furthest distance a color could be from this color.
-        self.max_distance = math.sqrt( (self.r if self.r > 128 else 255 - self.r)**2 + (self.g if self.g > 128 else 255 - self.g)**2 + (self.b if self.b > 128 else 255 - self.b)**2 )
+        self.max_distance = math.sqrt(
+            (self.r if self.r > 128 else 255 - self.r)**2 +
+            (self.g if self.g > 128 else 255 - self.g)**2 +
+            (self.b if self.b > 128 else 255 - self.b)**2
+        )
+
     def __str__(self):
         return "R{0:03d}G{1:03d}B{2:03d}A{3:03d}".format(int(self.r), int(self.g), int(self.b), int(self.a))
+
     def compare(self, color2):
         distance = math.sqrt((self.r - color2.r)**2 + (self.g - color2.g)**2 + (self.b - color2.b)**2)
         if distance < 1:
             distance = 1
-        accuracy = (((self.max_distance - distance)  / self.max_distance )** 3)
+        accuracy = (((self.max_distance - distance) / self.max_distance) ** 3)
         # Let's consider 20 % a rough floor. It's rare to get below that without looking at extremes
         accuracy = (accuracy - 0.20) / 0.8
         if accuracy < 0:
@@ -44,11 +48,12 @@ class GemColor(Enum):
     Blue = 3
     Yellow = 4
     Purple = 5
-gem_color_red = color(172, 30, 25, 0)
-gem_color_green = color(54, 116, 37, 0)
-gem_color_blue = color(41, 103, 180, 0)
-gem_color_purple = color(126, 31, 167, 0)
-gem_color_yellow = color(182, 129, 40, 0)
+gem_color_red = Color(172, 30, 25, 0)
+gem_color_green = Color(54, 116, 37, 0)
+gem_color_blue = Color(41, 103, 180, 0)
+gem_color_purple = Color(126, 31, 167, 0)
+gem_color_yellow = Color(182, 129, 40, 0)
+
 
 def guess_gem_color(pixel):
     closest_amount = gem_color_red.compare(pixel)
@@ -57,42 +62,44 @@ def guess_gem_color(pixel):
     blue_amount = gem_color_blue.compare(pixel)
     purple_amount = gem_color_purple.compare(pixel)
     yellow_amount = gem_color_yellow.compare(pixel)
-    if (green_amount > closest_amount):
+    if green_amount > closest_amount:
         closest_color = GemColor.Green
         closest_amount = green_amount
-    if (blue_amount > closest_amount):
+    if blue_amount > closest_amount:
         closest_color = GemColor.Blue
         closest_amount = blue_amount
-    if (purple_amount > closest_amount):
+    if purple_amount > closest_amount:
         closest_color = GemColor.Purple
         closest_amount = purple_amount
-    if (yellow_amount > closest_amount):
+    if yellow_amount > closest_amount:
         closest_color = GemColor.Yellow
         closest_amount = yellow_amount
     return closest_color, closest_amount
 
 
-
-def getpixel(image, x,y):
+def get_pixel(image, x, y):
     r, g, b = image.getpixel((x, y))
-    return color(r, g, b, 0)
+    return Color(r, g, b, 0)
+
 
 def get_avg_pixel(image, x, y, r=15):
-    avgpixel = color(0,0,0,0)
+    avgpixel = Color(0, 0, 0, 0)
     count = (r * 2) ** 2
     for posx in range(x - r, x + r):
         for posy in range(y - r, y + r):
-            p = getpixel(image, posx,posy)
+            p = get_pixel(image, posx, posy)
             avgpixel.r += p.r / float(count)
             avgpixel.g += p.g / float(count)
             avgpixel.b += p.b / float(count)
             avgpixel.a += p.a / float(count)
     return avgpixel
 
-def click_mouse(x,y):
-    win32api.SetCursorPos((x,y))
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0)
-    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0)
+
+def click_mouse(x, y):
+    win32api.SetCursorPos((x, y))
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
+    win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
+
 
 class Move:
     """
@@ -114,7 +121,8 @@ class Move:
         if self.submove is None:
             return self.points
         else:
-            # Until something is accounted for unknown blocks creating matches, we need t oslightly favor clearing things earlier.
+            # Until something is accounted for unknown blocks creating matches,
+            # we need to slightly favor clearing things earlier.
             return self.points + (self.submove.get_total_points() * depth_factor)
 
     def describe(self):
@@ -128,14 +136,14 @@ class Move:
             return "{0}, {1}".format(description, self.submove.describe())
 
 
-
 class Gem:
     def __init__(self, color):
         self.color = color
         self.cleared = False
 
+
 class Board:
-    def __init__(self, xoffset, yoffset, grid= None):
+    def __init__(self, xoffset, yoffset, grid=None):
         if grid is None:
             screengrab = ImageGrab.grab()
 
@@ -145,7 +153,10 @@ class Board:
             best_x = xoffset
             best_y = yoffset
             search_r = 25
-            positions = list(itertools.product(range(xoffset - search_r, xoffset + search_r), range(yoffset - search_r, yoffset + search_r)))
+            positions = list(itertools.product(
+                range(xoffset - search_r, xoffset + search_r),
+                range(yoffset - search_r, yoffset + search_r))
+            )
             for posx, posy in positions:
                 gem, accuracy = guess_gem_color(get_avg_pixel(screengrab, posx, posy))
                 if accuracy > best_accuracy:
@@ -153,7 +164,7 @@ class Board:
                     best_x = posx
                     best_y = posy
                 if best_accuracy > 0.90:
-                    break;
+                    break
 
             xoffset = best_x
             yoffset = best_y
@@ -233,9 +244,6 @@ class Board:
     def print_grid(self):
         print(self.describe_grid())
 
-    def describe_move(self, move, sub_moves):
-        return "Swap: {0},{1}({2}) with {3},{4}({5}) followed by {6}".format(move[0] + 1, move[1] + 1, self.grid[move[0]][move[1]].color.name, move[2] + 1, move[3] + 1, self.grid[move[2]][move[3]].color.name, sub_moves)
-
     def best_move(self, depth=3):
         """
         Find the best move.
@@ -247,21 +255,21 @@ class Board:
 
         possible_moves = []
 
-        for x, y in [(x,y) for x in range(4) for y in range(4)]:
+        for x, y in [(x, y) for x in range(4) for y in range(4)]:
             # Swap right
-            possible_moves.append(Move(x,y,self.grid[x][y].color, x+1,y,self.grid[x+1][y].color))
+            possible_moves.append(Move(x, y, self.grid[x][y].color, x+1, y, self.grid[x+1][y].color))
             # Swap down
-            possible_moves.append(Move(x,y,self.grid[x][y].color, x,y+1,self.grid[x][y+1].color))
+            possible_moves.append(Move(x, y, self.grid[x][y].color, x, y+1, self.grid[x][y+1].color))
         # Check bottom row moves.
         y = 4
         for x in range(4):
             # Swap right
-            possible_moves.append(Move(x,y,self.grid[x][y].color, x+1,y,self.grid[x+1][y].color))
+            possible_moves.append(Move(x, y, self.grid[x][y].color, x+1, y, self.grid[x+1][y].color))
         # Check right column moves.
         x = 4
         for y in range(4):
             # Swap down
-            possible_moves.append(Move(x,y,self.grid[x][y].color, x,y+1,self.grid[x][y+1].color))
+            possible_moves.append(Move(x, y, self.grid[x][y].color, x, y+1, self.grid[x][y+1].color))
 
         for move in possible_moves:
             # Skip this move if it's identical color to identical color.
@@ -271,7 +279,7 @@ class Board:
                 logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
             newboard = deepcopy(self)
             newboard.swap(move)
-            points, submove  = newboard.simulate(depth)
+            points, submove = newboard.simulate(depth)
             move.points = points
             move.submove = submove
 
@@ -284,12 +292,11 @@ class Board:
                 best_submove = best_move.submove
                 submove = move.submove
                 while best_submove is not None and submove is not None:
-                    if (submove.points > best_submove.points):
+                    if submove.points > best_submove.points:
                         best_move = move
                         break
                     best_submove = best_submove.submove
                     submove = submove.submove
-
 
         return best_move
 
@@ -313,9 +320,10 @@ class Board:
     def simulate(self, depth=1, fillrandom=False, probabilitypoints=True):
         """
         Estimate how many points the current board would generate.
-        depth: How many moves deep to simulate. If greater than 1, then additional best moves will be calculated on each simulated result.
+        depth: How many moves deep to simulate. If greater than 1, then
+         additional best moves will be calculated on each simulated result.
         """
-        points =  0.0
+        points = 0.0
         sub_move = None
 
         if args.debug:
@@ -324,7 +332,7 @@ class Board:
 
         simpoints = 0
         newpoints = firstpoints
-        while (newpoints > 0):
+        while newpoints > 0:
             simpoints += newpoints
             self.drop()
             self.fill(fillrandom)
@@ -339,8 +347,8 @@ class Board:
 
         return points, sub_move
 
-
-    def clear_chance(self, color1, color2, color3):
+    @staticmethod
+    def clear_chance(color1, color2, color3):
         if color1 == GemColor.Unknown or color2 == GemColor.Unknown or color3 == GemColor.Unknown:
             return 0.0
         elif color1 == color2 and color2 == color3:
@@ -355,13 +363,13 @@ class Board:
         # Calculate which gems to remove, counting how many of each color are removed.
         # TODO: Account for probability of unknown gems completing a match.
         # Scan rows
-        for x, y in [(x,y) for x in range(3) for y in range(5)]:
+        for x, y in [(x, y) for x in range(3) for y in range(5)]:
             if self.clear_chance(self.grid[x][y].color, self.grid[x+1][y].color, self.grid[x+2][y].color) > 0.0:
                 self.grid[x][y].cleared = True
                 self.grid[x+1][y].cleared = True
                 self.grid[x+2][y].cleared = True
         # Scan columns
-        for x, y in [(x,y) for x in range(5) for y in range(3)]:
+        for x, y in [(x, y) for x in range(5) for y in range(3)]:
             if self.clear_chance(self.grid[x][y].color, self.grid[x][y+1].color, self.grid[x][y+2].color) > 0.0:
                 self.grid[x][y].cleared = True
                 self.grid[x][y+1].cleared = True
@@ -374,7 +382,7 @@ class Board:
             GemColor.Purple: 0,
             GemColor.Yellow: 0
         }
-        for x, y in [(x,y) for x in range(5) for y in range(5)]:
+        for x, y in [(x, y) for x in range(5) for y in range(5)]:
             if self.grid[x][y].cleared:
                 removed[self.grid[x][y].color] += 1
         colors_cleared = 0
@@ -419,7 +427,7 @@ class Board:
                     self.grid[x][0] = None
                     # If there was nothing to drop down, we need to set the bottom most
         if args.debug:
-            for x, y in [(x,y) for x in range(5) for y in range(5)]:
+            for x, y in [(x, y) for x in range(5) for y in range(5)]:
                 if self.grid[x][y] is not None and self.grid[x][y].cleared:
                     print("ERROR: Grid was not fully cleared.")
                     sys.exit(1)
@@ -428,7 +436,7 @@ class Board:
         """
         Fill the board with random gems.
         """
-        for x, y in [(x,y) for x in range(5) for y in range(5)]:
+        for x, y in [(x, y) for x in range(5) for y in range(5)]:
             if self.grid[x][y] is None:
                 if fillrandom:
                     self.grid[x][y] = Gem(GemColor(random.randint(1, 5)))
@@ -436,15 +444,30 @@ class Board:
                     self.grid[x][y] = Gem(GemColor.Unknown)
 
 
-
 parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
-parser.add_argument('--depth', type=int, default=2, help='How many moves deep to predict. Defaults to 2. Warning: potentially 40^depth moves have to be tested. Increasing this exponentially increases processing time.')
-parser.add_argument('--delay', type=float, default=1.5, help='How many seconds to wait after clicking. Default is 1.5. For slow connections or computers, increase this value.')
-parser.add_argument('--fast0', action='store_true', help='If best move is a zero point move, perform the next submove without recalculating. Runs faster, but at expensive of highe raverage points.')
-parser.add_argument('--debug', action='store_true', help='Enable debug mode, a gemology.log file will be output with details on the tested moves.')
-parser.add_argument('--simulate', action='store_true', help='Enable simulation mode. Script will create a new random board and simulate best moves and results.')
+parser.add_argument('--energy', type=int, default=-1, help="""
+Remaining energy. If not specified then will be prompted.
+""")
+parser.add_argument('--depth', type=int, default=2, help="""
+How many moves deep to predict. Defaults to 2.' +
+Warning: potentially 40^depth moves have to be tested. Increasing this' +
+exponentially increases processing time.')
+""")
+parser.add_argument('--delay', type=float, default=1.5, help="""
+How many seconds to wait after clicking. Default is 1.5.
+For slow connections or computers, increase this value.
+""")
+parser.add_argument('--fast0', action='store_true', help="""
+If best move is a zero point move, perform the next submove without recalculating.
+Runs faster, but at expensive of higher average points.
+""")
+parser.add_argument('--debug', action='store_true', help="""
+Enable debug mode, a gemology.log file will be output with details on the tested moves.
+""")
+parser.add_argument('--simulate', action='store_true', help="""
+Enable simulation mode. Script will create a new random board and simulate best moves and results.
+""")
 args = parser.parse_args()
-
 
 
 if args.simulate:
@@ -455,7 +478,7 @@ if args.simulate:
         for y in range(5):
             column.append(Gem(GemColor(random.randint(1, 5))))
         randomgrid.append(column)
-    board = Board(0,0,randomgrid)
+    board = Board(0, 0, randomgrid)
     # Normalize the board so nothing is ready to clear.
     board.simulate(fillrandom=True, probabilitypoints=False)
     print("Random starting grid:")
@@ -475,37 +498,42 @@ if args.simulate:
             board.swap(move)
             points, sub_move = board.simulate(fillrandom=True, probabilitypoints=False)
             total_points += points
-            print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(points, (float(total_points) / total_moves), total_moves))
+            print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(
+                points, (float(total_points) / total_moves), total_moves))
             if args.fast0:
                 move = move.submove
             else:
                 points = -1
 
 
-gdi= windll.LoadLibrary("c:\\windows\\system32\\gdi32.dll")
+gdi = windll.LoadLibrary("c:\\windows\\system32\\gdi32.dll")
 dc = windll.user32.GetDC(0)
 
 loglevel = logging.INFO
 if args.debug:
     loglevel = logging.DEBUG
-logging.basicConfig(filename='gemology.log',level=loglevel)
+logging.basicConfig(filename='gemology.log', level=loglevel)
 
 
 class _point_t(Structure):
     _fields_ = [
-                ('x',  c_long),
-                ('y',  c_long),
-               ]
+        ('x',  c_long),
+        ('y',  c_long),
+    ]
+
 
 def get_cursor_position():
     point = _point_t()
     result = windll.user32.GetCursorPos(pointer(point))
-    if result:  return (point.x, point.y)
-    else:       return None
+    if result:
+        return point.x, point.y
+    else:
+        return None
     
-
-
-remaining_energy = int(input("How much gemology energy remain: "))
+if args.energy > 0:
+    remaining_energy = args.energy
+else:
+    remaining_energy = int(input("How much gemology energy remain: "))
 
 var = input("Place mouse over top left gem and press enter.")
 xoffset, yoffset = get_cursor_position()
