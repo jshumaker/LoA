@@ -48,32 +48,24 @@ class GemColor(Enum):
     Blue = 3
     Yellow = 4
     Purple = 5
-gem_color_red = Color(172, 30, 25, 0)
-gem_color_green = Color(54, 116, 37, 0)
-gem_color_blue = Color(41, 103, 180, 0)
-gem_color_purple = Color(126, 31, 167, 0)
-gem_color_yellow = Color(182, 129, 40, 0)
+
+GemColors = {
+    GemColor.Red: Color(172, 30, 25, 0),
+    GemColor.Green: Color(54, 116, 37, 0),
+    GemColor.Blue: Color(41, 103, 180, 0),
+    GemColor.Purple: Color(126, 31, 167, 0),
+    GemColor.Yellow: Color(182, 129, 40, 0)
+}
 
 
 def guess_gem_color(pixel):
-    closest_amount = gem_color_red.compare(pixel)
-    closest_color = GemColor.Red
-    green_amount = gem_color_green.compare(pixel)
-    blue_amount = gem_color_blue.compare(pixel)
-    purple_amount = gem_color_purple.compare(pixel)
-    yellow_amount = gem_color_yellow.compare(pixel)
-    if green_amount > closest_amount:
-        closest_color = GemColor.Green
-        closest_amount = green_amount
-    if blue_amount > closest_amount:
-        closest_color = GemColor.Blue
-        closest_amount = blue_amount
-    if purple_amount > closest_amount:
-        closest_color = GemColor.Purple
-        closest_amount = purple_amount
-    if yellow_amount > closest_amount:
-        closest_color = GemColor.Yellow
-        closest_amount = yellow_amount
+    closest_amount = 0.0
+    closest_color = GemColor.Unknown
+    for gemcolor, color in GemColors.items():
+        amount = color.compare(pixel)
+        if amount > closest_amount:
+            closest_amount = amount
+            closest_color = gemcolor
     return closest_color, closest_amount
 
 
@@ -515,6 +507,7 @@ if args.debug:
 logging.basicConfig(filename='gemology.log', level=loglevel)
 
 
+# noinspection PyPep8Naming
 class _point_t(Structure):
     _fields_ = [
         ('x',  c_long),
