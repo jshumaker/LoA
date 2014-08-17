@@ -240,10 +240,11 @@ class Grid:
             self.xoffset = xoffset
             self.yoffset = yoffset
 
-    def update(self):
+    def update(self, compareprevious=False):
         screengrab = ImageGrab.grab()
         lowest_accuracy = 1.00
-        self.grid = []
+        newgrid = []
+        item_changed = False
         for x in range(5):
             column = []
             for y in range(5):
@@ -255,11 +256,16 @@ class Grid:
                 column.append(GridItem(griditemtype))
                 if accuracy < lowest_accuracy:
                     lowest_accuracy = accuracy
-            self.grid.append(column)
+                if compareprevious and griditemtype != self.grid[x][y].itemtype:
+                    item_changed = True
+            newgrid.append(column)
 
         if lowest_accuracy < 0.60:
             #print("WARNING: Lowest accuracy was {0:02.1f}%".format(lowest_accuracy * 100.0))
             return False
+        if compareprevious and not item_changed:
+            print("Warning, grid did not change.")
+        self.grid = newgrid
         return True
 
     def describe_grid_large(self):
@@ -375,10 +381,13 @@ class Grid:
         #print("Clicking: {0}".format((x1, y1)))
         Mouse.click(x1, y1)
         starttime = time.time()
-        time.sleep(delay)
-
         #print("Clicking: {0}".format((x2, y2)))
         Mouse.click(x2, y2)
+        time.sleep(0.010)
+        if Mouse.cursor_is_hand():
+            print("ERROR: Move didn't happen.")
+            return False
+        time.sleep(delay)
         time.sleep(delay)
         while True:
             Mouse.move(x2, y2)

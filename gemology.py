@@ -59,8 +59,8 @@ How many moves deep to predict. Defaults to 2.
 Warning: potentially 40^depth moves have to be tested. Increasing this
 exponentially increases processing time.
 """)
-parser.add_argument('--delay', type=float, default=0.5, help="""
-How many seconds to wait after clicking. Default is 0.5.
+parser.add_argument('--delay', type=float, default=1.0, help="""
+How many seconds to wait after clicking. Default is 1.0.
 For slow connections or computers, increase this value.
 """)
 parser.add_argument('--fast0', action='store_true', help="""
