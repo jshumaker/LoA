@@ -372,22 +372,28 @@ class Grid:
         x2 = swap.x2 * 50 + self.xoffset
         y2 = swap.y2 * 50 + self.yoffset
 
-        Mouse.move(x1, y1)
-        time.sleep(0.010)
-        if not Mouse.cursor_is_hand():
-            print("ERROR: cursor was not hand at intended click target.")
-            print("Current: {0} Hand: {1} Arrow: {2}".format(Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
-            return False
+        retry_count = 0
+        while True:
+            retry_count += 1
+            Mouse.move(x1, y1)
+            time.sleep(0.010)
+            if Mouse.cursor_is_hand():
+                break
+            elif retry_count > 5:
+                print("ERROR: cursor was not hand at intended click target.")
+                print("Current: {0} Hand: {1} Arrow: {2}".format(Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
+                return False
+            time.sleep(0.200)
         #print("Clicking: {0}".format((x1, y1)))
         Mouse.click(x1, y1)
+        time.sleep(delay)
         starttime = time.time()
         #print("Clicking: {0}".format((x2, y2)))
         Mouse.click(x2, y2)
-        time.sleep(0.010)
-        if Mouse.cursor_is_hand():
-            print("ERROR: Move didn't happen.")
-            return False
-        time.sleep(delay)
+        time.sleep(0.100)
+        #if swap.points > 0 and Mouse.cursor_is_hand():
+        #    print("ERROR: Move didn't start.")
+        #    return False
         time.sleep(delay)
         while True:
             Mouse.move(x2, y2)
