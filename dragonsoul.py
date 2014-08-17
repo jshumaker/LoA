@@ -11,14 +11,7 @@ class Element(GridItemType):
 
 class Board(Grid):
     # Bonus points to give for higher counts cleared. Increase to favor higher numbers of gems cleared.
-    count_factor = 2.0
-    # Adjustment to specific elements.
-    element_factors = {
-
-    }
-    wind_factor = 1.0
-    ice_factor = 1.0
-    fire_factor = 1.0
+    count_factor = 0.0
 
     def update(self):
         # Move the mouse out of the way so tooltip isn't there.
@@ -73,6 +66,10 @@ parser = argparse.ArgumentParser(description='Automatically play LoA Dragon Soul
 parser.add_argument('--energy', '-e', type=int, default=-1, help="""
 Remaining energy. If not specified then will be prompted.
 """)
+parser.add_argument('--count', type=float, default=0.0, help="""
+Count factor, defaults to 0.0.  This is multiplied by the number of elements of a specific type being cleared.
+ Set above 0 to favor clearing more elements at once, which increases odds of better elements gained.
+""")
 parser.add_argument('--wind', type=float, default=1.0, help="""
 Wind factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
  less, or above 1.0 to favor more.
@@ -98,8 +95,8 @@ How many moves deep to predict. Defaults to 2.
 Warning: potentially 40^depth moves have to be tested. Increasing this
 exponentially increases processing time.
 """)
-parser.add_argument('--delay', type=float, default=2.0, help="""
-How many seconds to wait after clicking. Default is 1.5.
+parser.add_argument('--delay', type=float, default=0.5, help="""
+How many seconds to wait after clicking. Default is 0.5.
 For slow connections or computers, increase this value.
 """)
 parser.add_argument('--fast0', action='store_true', help="""
@@ -134,6 +131,7 @@ Grid.GridItemTypes = [
 ]
 
 if args.calibrate:
+    Mouse.get_cursor()
     calibrate_colors()
     sys.exit(0)
 
@@ -145,7 +143,7 @@ if args.simulate:
 loglevel = logging.INFO
 if args.debug:
     loglevel = logging.DEBUG
-logging.basicConfig(filename='gemology.log', level=loglevel)
+logging.basicConfig(filename='dragonsoul.log', level=loglevel)
     
 if args.energy > 0:
     remaining_energy = args.energy

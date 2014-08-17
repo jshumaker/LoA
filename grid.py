@@ -4,6 +4,7 @@ from ctypes import *
 import math
 import win32api
 import win32con
+import win32gui
 import itertools
 from PIL import ImageGrab
 from copy import deepcopy
@@ -105,10 +106,32 @@ class Mouse:
             return None
 
     @staticmethod
+    def move(x, y):
+        win32api.SetCursorPos((x, y))
+
+    @staticmethod
     def click(x, y):
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
+
+    arrow_cursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
+    hand_cursor = win32api.LoadCursor(0, win32con.IDC_HAND)
+
+    @staticmethod
+    def get_cursor():
+        flags, current_cursor, position = win32gui.GetCursorInfo()
+        return current_cursor
+
+    @staticmethod
+    def cursor_is_hand():
+        flags, current_cursor, position = win32gui.GetCursorInfo()
+        return current_cursor == Mouse.hand_cursor
+
+    @staticmethod
+    def cursor_is_arrow():
+        flags, current_cursor, position = win32gui.GetCursorInfo()
+        return current_cursor == Mouse.arrow_cursor
 
 
 class Move:
@@ -336,17 +359,37 @@ class Grid:
 
         return best_move
 
-    def do_swap(self, swap, delay):
+    def do_swap(self, swap, delay, timeout=30.000):
 
         x1 = swap.x1 * 50 + self.xoffset
         y1 = swap.y1 * 50 + self.yoffset
         x2 = swap.x2 * 50 + self.xoffset
         y2 = swap.y2 * 50 + self.yoffset
+
+        Mouse.move(x1, y1)
+        time.sleep(0.010)
+        if not Mouse.cursor_is_hand():
+            print("ERROR: cursor was not hand at intended click target.")
+            print("Current: {0} Hand: {1} Arrow: {2}".format(Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
+            return False
         #print("Clicking: {0}".format((x1, y1)))
         Mouse.click(x1, y1)
+        starttime = time.time()
         time.sleep(delay)
+
         #print("Clicking: {0}".format((x2, y2)))
         Mouse.click(x2, y2)
+        time.sleep(delay)
+        while True:
+            Mouse.move(x2, y2)
+            time.sleep(0.010)
+            if Mouse.cursor_is_hand():
+                return True
+            if starttime + timeout < time.time():
+                print("ERROR: Timed out waiting for move to complete.")
+                return False
+            time.sleep(0.100)
+        time.sleep(delay)
 
     def swap(self, swap):
         tempgem = self.grid[swap.x1][swap.y1]
@@ -498,9 +541,8 @@ class Grid:
             # Iterate over moves until one is performed that is expected to give >0 points
             while lastmove_points == 0:
                 remaining_energy -= 1
-                self.do_swap(move,  Grid.delay)
-                #blah = input("Press enter to calculate next move.")
-                print("Waiting for move to complete...")
+                if not self.do_swap(move, Grid.delay):
+                    sys.exit(1)
                 if remaining_energy > 1:
                     time.sleep(Grid.delay)
                 if Grid.fast0:
