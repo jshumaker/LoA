@@ -3,7 +3,30 @@ from grid import *
 import logging
 
 
+class Element(GridItemType):
+    def __init__(self, name, color, factor):
+        GridItemType.__init__(self, name, color)
+        self.factor = factor
+
+
 class Board(Grid):
+    # Bonus points to give for higher counts cleared. Increase to favor higher numbers of gems cleared.
+    count_factor = 2.0
+    # Adjustment to specific elements.
+    element_factors = {
+
+    }
+    wind_factor = 1.0
+    ice_factor = 1.0
+    fire_factor = 1.0
+
+    def update(self):
+        # Move the mouse out of the way so tooltip isn't there.
+        win32api.SetCursorPos((self.xoffset - 50, self.yoffset - 50))
+        time.sleep(0.01)
+        return Grid.update(self)
+
+
     def clear(self, probabilitypoints=True):
         """
         Mark gems as cleared and count points.
@@ -23,36 +46,52 @@ class Board(Grid):
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
             if self.grid[x][y].cleared:
                 removed[self.grid[x][y].itemtype] += 1
-        colors_cleared = 0
-        gems_cleared = 0
+        items_cleared = 0
         points = 0
-        for itemtype, count in removed.items():
+        for element, count in removed.items():
+            element_points = 0
             if count > 0:
-                gems_cleared += count
-                colors_cleared += 1
+                items_cleared += count
             if count == 3:
-                points += 10
+                element_points += 10
             elif count == 4:
-                points += 20
+                element_points += 15
             if count >= 5:
-                points += 50
-        # If more than one color is cleared, there's a 30 point bonus.
-        if colors_cleared > 1:
-            points += 30
-
+                element_points += 20
+            if probabilitypoints:
+                points += element_points * element.factor
+                points += count * Board.count_factor
+            else:
+                points += element_points
         if probabilitypoints:
             # Add some probabilitiy points based upon the number of gems cleared.
-            points += (1.0 - (0.8 ** gems_cleared)) * gems_cleared
-
-        # Not possible to gain more than 60 points on a single clear.
-        if points > 60:
-            points = 60
+            points += (1.0 - (0.8 ** items_cleared)) * items_cleared
         return points
 
 
-parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
+parser = argparse.ArgumentParser(description='Automatically play LoA Dragon Souls')
 parser.add_argument('--energy', '-e', type=int, default=-1, help="""
 Remaining energy. If not specified then will be prompted.
+""")
+parser.add_argument('--wind', type=float, default=1.0, help="""
+Wind factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+ less, or above 1.0 to favor more.
+""")
+parser.add_argument('--ice', type=float, default=1.0, help="""
+Ice factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+ less, or above 1.0 to favor more.
+""")
+parser.add_argument('--electro', type=float, default=1.0, help="""
+Electro factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+ less, or above 1.0 to favor more.
+""")
+parser.add_argument('--fire', type=float, default=1.0, help="""
+Fire factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+ less, or above 1.0 to favor more.
+""")
+parser.add_argument('--random', type=float, default=1.0, help="""
+Random factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+ less, or above 1.0 to favor more.
 """)
 parser.add_argument('--depth', type=int, default=2, help="""
 How many moves deep to predict. Defaults to 2.
@@ -87,11 +126,11 @@ if args.fast0:
 
 Grid.delay = args.delay
 Grid.GridItemTypes = [
-    GridItemType('Red', Color(172, 30, 25, 0)),
-    GridItemType('Green', Color(54, 116, 37, 0)),
-    GridItemType('Blue', Color(41, 103, 180, 0)),
-    GridItemType('Purple', Color(126, 31, 167, 0)),
-    GridItemType('Yellow', Color(182, 129, 40, 0))
+    Element('Wind', Color(109, 159, 46, 0), args.wind),
+    Element('Electro', Color(165, 119, 230, 0), args.electro),
+    Element('Ice', Color(61, 174, 210, 0), args.ice),
+    Element('Fire', Color(222, 158, 24, 0), args.fire),
+    Element('Random', Color(118, 81, 51, 0), args.random)
 ]
 
 if args.calibrate:
@@ -111,11 +150,13 @@ logging.basicConfig(filename='gemology.log', level=loglevel)
 if args.energy > 0:
     remaining_energy = args.energy
 else:
-    remaining_energy = int(input("How much gemology energy remain: "))
+    remaining_energy = int(input("How much dragon soul energy remain: "))
 
-var = input("Place mouse over top left gem and press enter.")
+var = input("Place mouse over top left element and press enter.")
 xoffset, yoffset = Mouse.get_position()
 
+#Move the mouse away
+win32api.SetCursorPos((xoffset - 50, yoffset - 50))
 board = Board(xoffset, yoffset)
 print("The starting grid appears to be:")
 board.print_grid()
