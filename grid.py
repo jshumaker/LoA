@@ -54,7 +54,7 @@ def guess_grid_item(pixel):
 
 
 def calibrate_colors():
-    blah = input("Place mouse over center of top left gem and press enter.")
+    input("Place mouse over center of top left gem and press enter.")
     xoffset, yoffset = Mouse.get_position()
     # Move the mouse away
     win32api.SetCursorPos((xoffset - 50, yoffset - 50))
@@ -381,7 +381,8 @@ class Grid:
                 break
             elif retry_count > 5:
                 print("ERROR: cursor was not hand at intended click target.")
-                print("Current: {0} Hand: {1} Arrow: {2}".format(Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
+                print("Current: {0} Hand: {1} Arrow: {2}".format(
+                    Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
                 return False
             time.sleep(0.200)
         #print("Clicking: {0}".format((x1, y1)))

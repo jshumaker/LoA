@@ -13,12 +13,11 @@ class Board(Grid):
     # Bonus points to give for higher counts cleared. Increase to favor higher numbers of gems cleared.
     count_factor = 0.0
 
-    def update(self):
+    def update(self, compareprevious=False):
         # Move the mouse out of the way so tooltip isn't there.
         win32api.SetCursorPos((self.xoffset - 50, self.yoffset - 50))
         time.sleep(0.01)
-        return Grid.update(self)
-
+        return Grid.update(self, compareprevious)
 
     def clear(self, probabilitypoints=True):
         """
