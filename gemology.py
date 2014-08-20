@@ -2,7 +2,6 @@ import argparse
 from grid import *
 import logging
 
-
 class Board(Grid):
     def clear(self, probabilitypoints=True):
         """
@@ -20,9 +19,20 @@ class Board(Grid):
         for itemtype in Grid.GridItemTypes:
             removed[itemtype] = 0
 
+        possibly_removed = {}
+        for itemtype in Grid.GridItemTypes:
+            possibly_removed[itemtype] = []
+        possibly_removed[Grid.GridItemTypeUnknown] = []
+
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
-            if self.grid[x][y].cleared:
-                removed[self.grid[x][y].itemtype] += 1
+            if self.grid[x][y].cleared >= 1.0:
+                if self.grid[x][y].itemtype == Grid.GridItemTypeUnknown:
+                    print("WARNING: unknown had probability {0:0.3f}".format(self.grid[x][y].cleared))
+                else:
+                    removed[self.grid[x][y].itemtype] += 1
+            elif self.grid[x][y].cleared > 0.0:
+                possibly_removed[self.grid[x][y].itemtype].append(self.grid[x][y].cleared)
+
         colors_cleared = 0
         gems_cleared = 0
         points = 0
@@ -40,13 +50,49 @@ class Board(Grid):
         if colors_cleared > 1:
             points += 30
 
-        if probabilitypoints:
-            # Add some probabilitiy points based upon the number of gems cleared.
-            points += (1.0 - (0.8 ** gems_cleared)) * gems_cleared
-
         # Not possible to gain more than 60 points on a single clear.
-        if points > 60:
-            points = 60
+        if points >= 60:
+            points = 60.0
+        elif probabilitypoints:
+            # We're not at max points, let's seee if we gain any from probability points.
+            # Add probability points from unknown gems.
+            colors_cleared_chance = 0.0
+            for itemtype, chances in possibly_removed.items():
+                # Skip colors that have no chance of clearing
+                if len(chances) < 1:
+                    continue
+                chances = sorted(chances, reverse=True)
+                probability3 = 0.0
+                probability4 = 0.0
+                probability5 = 0.0
+                # If this is a chance of a known color clearing
+                if itemtype != Grid.GridItemTypeUnknown:
+                    # Simplistic algorithm only
+                    if removed[itemtype] >= 5:
+                        continue
+                    elif removed[itemtype] == 0 and len(chances) > 2:
+                        probability3 = chances[2]
+                    elif removed[itemtype] == 3:
+                        probability4 = chances[0]
+                    elif removed[itemtype] == 4:
+                        probability5 = chances[0]
+                else:
+                    # Unknown color, let's assume there might be an additional 3 gems of a unique color dropped.
+                    if len(chances) >= 3:
+                        probability3 = chances[0]
+                # Probabilities calculated, let's add probability points.
+                #print("Probabities 3: {0:0.3f} 4: {1:0.3f} 5: {2:0.3f}".format(
+                #    probability3, probability4, probability5))
+                points += probability3 * 10
+                points += probability4 * 10
+                points += probability5 * 20
+                if colors_cleared < 2:
+                    colors_cleared_chance = 1.0 - ((1.0 - colors_cleared_chance) * (1.0 - probability3))
+            if colors_cleared < 2:
+                points += colors_cleared_chance * 30
+            if points > 60:
+                points = 60.0
+
         return points
 
 

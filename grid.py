@@ -423,16 +423,11 @@ class Grid:
 
         if Grid.debug:
             logging.debug("Simulating board:\n{0}".format(self.describe_grid()))
-        firstpoints = self.clear(probabilitypoints)
+        points = self.clear(probabilitypoints)
 
-        simpoints = 0
-        newpoints = firstpoints
-        while newpoints > 0:
-            simpoints += newpoints
-            self.drop()
+        while self.drop() > 0:
             self.fill(fillrandom)
-            newpoints = self.clear(probabilitypoints)
-        points += float(simpoints)
+            points += self.clear(probabilitypoints)
         if Grid.debug:
             logging.debug("Points: {0} End Board:\n{1}".format(points, self.describe_grid()))
 
@@ -446,21 +441,28 @@ class Grid:
         """
         Examine grid for cleared gems, drop remaining gems above.
         """
+        drop_count = 0
         # Drop the columns.
         for x in range(5):
             for y in reversed(range(5)):
-                while not self.grid[x][y] is None and self.grid[x][y].cleared:
+                while not self.grid[x][y] is None and self.grid[x][y].cleared >= 1.0:
                     if y > 0:
                         # Drop down the items above.
                         for y2 in reversed(range(y)):
                             self.grid[x][y2 + 1] = self.grid[x][y2]
                     # Clear the top item.
                     self.grid[x][0] = None
-        if Grid.debug:
-            for x, y in [(x, y) for x in range(5) for y in range(5)]:
-                if self.grid[x][y] is not None and self.grid[x][y].cleared:
-                    print("ERROR: Grid was not fully cleared.")
+                    drop_count += 1
+
+        for x, y in [(x, y) for x in range(5) for y in range(5)]:
+            if self.grid[x][y] is not None:
+                if Grid.debug and self.grid[x][y].cleared >= 1.0:
+                    print("ERROR: Grid was not fully dropped.")
                     sys.exit(1)
+                elif self.grid[x][y].cleared > 0.0:
+                    # Reset partial clears.
+                    self.grid[x][y].cleared = 0.0
+        return drop_count
 
     def fill(self, fillrandom=False):
         """
@@ -475,14 +477,34 @@ class Grid:
 
     @staticmethod
     def clear_items(item1, item2, item3):
-        if item1.itemtype == Grid.GridItemTypeUnknown or \
-                item2.itemtype == Grid.GridItemTypeUnknown or \
-                item3.itemtype == Grid.GridItemTypeUnknown:
-            return
+        if (item1.itemtype == Grid.GridItemTypeUnknown or
+            item2.itemtype == Grid.GridItemTypeUnknown or
+            item3.itemtype == Grid.GridItemTypeUnknown
+        ):
+            unknown_count = 0
+            if item1.itemtype == Grid.GridItemTypeUnknown:
+                unknown_count += 1
+            if item2.itemtype == Grid.GridItemTypeUnknown:
+                unknown_count += 1
+            if item3.itemtype == Grid.GridItemTypeUnknown:
+                unknown_count += 1
+            if unknown_count > 1:
+                # 2 or 3 are unknown, additional 4% chance of clearing.
+                item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.96)
+                item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
+                item3.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
+            elif ((item1.itemtype == Grid.GridItemTypeUnknown and item2.itemtype == item3.itemtype) or
+                  (item2.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item3.itemtype) or
+                  (item3.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item2.itemtype)
+                  ):
+                # 2 match, 1 is unknown, additional 20% chance of clearing
+                item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.8)
+                item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
+                item3.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
         elif item1.itemtype == item2.itemtype and item2.itemtype == item3.itemtype:
-            item1.cleared = True
-            item2.cleared = True
-            item3.cleared = True
+            item1.cleared = 1.0
+            item2.cleared = 1.0
+            item3.cleared = 1.0
 
     def clear(self, probabilitypoints=True):
         # This method should be overriden and dfeined fot the specific game.
