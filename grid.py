@@ -172,7 +172,7 @@ class Move:
 class GridItem:
     def __init__(self, itemtype):
         self.itemtype = itemtype
-        self.cleared = False
+        self.cleared = 0.0
 
 
 class GridItemType:
@@ -273,17 +273,15 @@ class Grid:
 
         row = " "
         for x in range(5):
-            row += " {0:>10}".format(x+1)
+            row += " {0:>15}".format(x+1)
         desc += row + "\n"
         for y in range(5):
             row = "{0}".format(y+1)
             for x in range(5):
                 if self.grid[x][y] is None:
-                    row += " {0:>10}".format("Empty")
-                elif self.grid[x][y].cleared:
-                    row += " {0:>7}(c)".format(self.grid[x][y].itemtype.name)
+                    row += " {0:>15}".format("Empty")
                 else:
-                    row += " {0:>10}".format(self.grid[x][y].itemtype.name)
+                    row += " {0:>10}({1:0.3f})".format(self.grid[x][y].itemtype.name, self.grid[x][y].cleared)
             desc += row + "\n"
         return desc
 
@@ -299,7 +297,7 @@ class Grid:
             for x in range(5):
                 if self.grid[x][y] is None:
                     row += " "
-                elif self.grid[x][y].cleared:
+                elif self.grid[x][y].cleared >= 1.0:
                     row += self.grid[x][y].itemtype.name[0].lower()
                 else:
                     row += self.grid[x][y].itemtype.name[0]
@@ -307,7 +305,7 @@ class Grid:
         return desc
 
     def print_grid(self):
-        print(self.describe_grid())
+        print(self.describe_grid_large())
 
     def best_move(self, depth=2):
         """
@@ -490,17 +488,23 @@ class Grid:
                 unknown_count += 1
             if unknown_count > 1:
                 # 2 or 3 are unknown, additional 4% chance of clearing.
-                item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.96)
-                item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
-                item3.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
+                if item1.itemtype == Grid.GridItemTypeUnknown:
+                    item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.96)
+                if item2.itemtype == Grid.GridItemTypeUnknown:
+                    item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
+                if item3.itemtype == Grid.GridItemTypeUnknown:
+                    item3.cleared = 1.0 - ((1.0 - item3.cleared) * 0.96)
             elif ((item1.itemtype == Grid.GridItemTypeUnknown and item2.itemtype == item3.itemtype) or
                   (item2.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item3.itemtype) or
                   (item3.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item2.itemtype)
                   ):
                 # 2 match, 1 is unknown, additional 20% chance of clearing
-                item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.8)
-                item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
-                item3.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
+                if item1.itemtype == Grid.GridItemTypeUnknown:
+                    item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.8)
+                if item2.itemtype == Grid.GridItemTypeUnknown:
+                    item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
+                if item3.itemtype == Grid.GridItemTypeUnknown:
+                    item3.cleared = 1.0 - ((1.0 - item3.cleared) * 0.8)
         elif item1.itemtype == item2.itemtype and item2.itemtype == item3.itemtype:
             item1.cleared = 1.0
             item2.cleared = 1.0

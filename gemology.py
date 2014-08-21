@@ -27,7 +27,9 @@ class Board(Grid):
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
             if self.grid[x][y].cleared >= 1.0:
                 if self.grid[x][y].itemtype == Grid.GridItemTypeUnknown:
-                    print("WARNING: unknown had probability {0:0.3f}".format(self.grid[x][y].cleared))
+                    print("ERROR: unknown had probability {0:0.3f}".format(self.grid[x][y].cleared))
+                    self.print_grid()
+                    sys.exit(1)
                 else:
                     removed[self.grid[x][y].itemtype] += 1
             elif self.grid[x][y].cleared > 0.0:
@@ -70,8 +72,9 @@ class Board(Grid):
                     # Simplistic algorithm only
                     if removed[itemtype] >= 5:
                         continue
-                    elif removed[itemtype] == 0 and len(chances) > 2:
-                        probability3 = chances[2]
+                    elif removed[itemtype] == 0:
+                        # TODO: Is this right?
+                        probability3 = chances[0]
                     elif removed[itemtype] == 3:
                         probability4 = chances[0]
                     elif removed[itemtype] == 4:
