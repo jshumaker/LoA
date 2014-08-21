@@ -336,6 +336,9 @@ class Grid:
             # Swap down
             possible_moves.append(Move(x, y, self.grid[x][y].itemtype, x, y+1, self.grid[x][y+1].itemtype))
 
+        # Shuffle the moves so we don't favor some specific order.
+        random.shuffle(possible_moves)
+
         for move in possible_moves:
             # Skip this move if it's identical color to identical color.
             if self.grid[move.x1][move.y1].itemtype == self.grid[move.x2][move.y2].itemtype:
@@ -488,41 +491,47 @@ class Grid:
         # This method should be overriden and dfeined fot the specific game.
         raise Exception("clear method not implemented.")
 
-    def simulate_play(self, depth=2):
-        # Do a simulation run
-        randomgrid = []
-        for x in range(5):
-            column = []
-            for y in range(5):
-                column.append(GridItem(Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))]))
-            randomgrid.append(column)
-        self.grid = randomgrid
-        # Normalize the board so nothing is ready to clear.
-        self.simulate(fillrandom=True, probabilitypoints=False)
-        print("Random starting grid:")
-        self.print_grid()
+    def simulate_play(self, depth=2, energy=100):
 
         starttime = time.time()
         total_points = 0
         total_moves = 0
         while True:
-            move = self.best_move(depth)
-            print("Best Move Sequence: {0}".format(move.describe()))
-            if move.get_total_points() == 0.0:
-                print("ERROR: Calculated move sequence gives zero points.")
-                sys.exit(1)
-            points = 0
-            while points == 0:
-                total_moves += 1
-                self.swap(move)
-                points, sub_move = self.simulate(fillrandom=True, probabilitypoints=False)
-                total_points += points
-                print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2} Average Calc Time: {3:0.1f}".format(
-                    points, (float(total_points) / total_moves), total_moves, (time.time() - starttime) / total_moves))
-                if Grid.fast0:
-                    move = move.submove
-                else:
-                    points = -1
+            # Do a simulation run of the given energy.
+            randomgrid = []
+            for x in range(5):
+                column = []
+                for y in range(5):
+                    column.append(GridItem(Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))]))
+                randomgrid.append(column)
+            self.grid = randomgrid
+            # Normalize the board so nothing is ready to clear.
+            self.simulate(fillrandom=True, probabilitypoints=False)
+            print("Random starting grid:")
+            self.print_grid()
+            sim_moves = 0
+            while sim_moves < energy:
+                move = self.best_move(depth)
+                #print("Best Move Sequence: {0}".format(move.describe()))
+                if move.get_total_points() == 0.0:
+                    print("ERROR: Calculated move sequence gives zero points.")
+                    sys.exit(1)
+                points = 0
+                while points == 0:
+                    total_moves += 1
+                    sim_moves += 1
+                    self.swap(move)
+                    points, sub_move = self.simulate(fillrandom=True, probabilitypoints=False)
+                    total_points += points
+                    if total_moves % 10 == 1:
+                        print("Move Points | Avg Points | Sim Moves | Total Moves | Avg Calc Time")
+                    print("{0:>11} | {1:>10.1f} | {2:>9} | {3:11} | {4:0.1f}".format(
+                        points, (float(total_points) / total_moves), sim_moves, total_moves,
+                        (time.time() - starttime) / total_moves))
+                    if Grid.fast0:
+                        move = move.submove
+                    else:
+                        points = -1
 
     def play(self, remaining_energy, depth=2):
         startime = time.time()

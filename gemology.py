@@ -100,7 +100,10 @@ if args.calibrate:
 
 if args.simulate:
     board = Board(0, 0, [])
-    board.simulate_play(args.depth)
+    if args.energy < 1:
+        board.simulate_play(args.depth)
+    else:
+        board.simulate_play(args.depth, args.energy)
 
 
 loglevel = logging.INFO
