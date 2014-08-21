@@ -80,19 +80,15 @@ class Board(Grid):
                     elif removed[itemtype] == 4:
                         probability5 = chances[0]
                 else:
-                    # Unknown color, let's assume there might be an additional 3 gems of a unique color dropped.
-                    if len(chances) >= 3:
-                        probability3 = chances[0]
+                    # Unknown color
+                    probability3 = chances[0]
+
                 # Probabilities calculated, let's add probability points.
                 #print("Probabities 3: {0:0.3f} 4: {1:0.3f} 5: {2:0.3f}".format(
                 #    probability3, probability4, probability5))
                 points += probability3 * 10
                 points += probability4 * 10
                 points += probability5 * 20
-                if colors_cleared < 2:
-                    colors_cleared_chance = 1.0 - ((1.0 - colors_cleared_chance) * (1.0 - probability3))
-            if colors_cleared < 2:
-                points += colors_cleared_chance * 30
             if points > 60:
                 points = 60.0
 

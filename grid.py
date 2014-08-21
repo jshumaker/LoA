@@ -488,22 +488,22 @@ class Grid:
                 unknown_count += 1
             if unknown_count > 1:
                 # 2 or 3 are unknown, additional 4% chance of clearing.
-                if item1.itemtype == Grid.GridItemTypeUnknown:
+                if item1.cleared < 1.0:
                     item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.96)
-                if item2.itemtype == Grid.GridItemTypeUnknown:
+                if item2.cleared < 1.0:
                     item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.96)
-                if item3.itemtype == Grid.GridItemTypeUnknown:
+                if item3.cleared < 1.0:
                     item3.cleared = 1.0 - ((1.0 - item3.cleared) * 0.96)
             elif ((item1.itemtype == Grid.GridItemTypeUnknown and item2.itemtype == item3.itemtype) or
                   (item2.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item3.itemtype) or
                   (item3.itemtype == Grid.GridItemTypeUnknown and item1.itemtype == item2.itemtype)
                   ):
                 # 2 match, 1 is unknown, additional 20% chance of clearing
-                if item1.itemtype == Grid.GridItemTypeUnknown:
+                if item1.cleared < 1.0:
                     item1.cleared = 1.0 - ((1.0 - item1.cleared) * 0.8)
-                if item2.itemtype == Grid.GridItemTypeUnknown:
+                if item2.cleared < 1.0:
                     item2.cleared = 1.0 - ((1.0 - item2.cleared) * 0.8)
-                if item3.itemtype == Grid.GridItemTypeUnknown:
+                if item3.cleared < 1.0:
                     item3.cleared = 1.0 - ((1.0 - item3.cleared) * 0.8)
         elif item1.itemtype == item2.itemtype and item2.itemtype == item3.itemtype:
             item1.cleared = 1.0
