@@ -347,6 +347,9 @@ class Grid:
         # Shuffle the moves so we don't favor some specific order.
         random.shuffle(possible_moves)
 
+        # Shuffle the moves so we don't favor some specific order.
+        random.shuffle(possible_moves)
+
         for move in possible_moves:
             # Skip this move if it's identical color to identical color.
             if self.grid[move.x1][move.y1] == self.grid[move.x2][move.y2]:
