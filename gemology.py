@@ -81,7 +81,9 @@ class Board(Grid):
                         probability5 = chances[0]
                 else:
                     # Unknown color
-                    probability3 = chances[0]
+                    # TODO: Check if this is right
+                    if len(chances) > 2:
+                        probability3 = chances[2]
 
                 # Probabilities calculated, let's add probability points.
                 #print("Probabities 3: {0:0.3f} 4: {1:0.3f} 5: {2:0.3f}".format(
