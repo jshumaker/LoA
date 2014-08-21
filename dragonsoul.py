@@ -23,21 +23,16 @@ class Board(Grid):
         """
         Mark gems as cleared and count points.
         """
-        # Calculate which gems to remove, counting how many of each color are removed.
-        # Scan rows
-        for x, y in [(x, y) for x in range(3) for y in range(5)]:
-            self.clear_items(self.grid[x][y], self.grid[x+1][y], self.grid[x+2][y])
-        # Scan columns
-        for x, y in [(x, y) for x in range(5) for y in range(3)]:
-            self.clear_items(self.grid[x][y], self.grid[x][y+1], self.grid[x][y+2])
+        Grid.clear(self, probabilitypoints)
+
         # Count what is removed.
         removed = {}
         for itemtype in Grid.GridItemTypes:
             removed[itemtype] = 0
 
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
-            if self.grid[x][y].cleared:
-                removed[self.grid[x][y].itemtype] += 1
+            if self.cleared[x][y]:
+                removed[self.grid[x][y]] += 1
         items_cleared = 0
         points = 0
         for element, count in removed.items():
@@ -136,8 +131,10 @@ if args.calibrate:
 
 if args.simulate:
     board = Board(0, 0, [])
-    board.simulate_play(args.depth)
-
+    if args.energy < 1:
+        board.simulate_play(args.depth)
+    else:
+        board.simulate_play(args.depth, args.energy)
 
 loglevel = logging.INFO
 if args.debug:
