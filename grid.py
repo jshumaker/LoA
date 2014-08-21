@@ -7,7 +7,7 @@ import win32con
 import win32gui
 import itertools
 from PIL import ImageGrab
-from copy import deepcopy
+import copy
 import sys
 import logging
 import time
@@ -169,12 +169,6 @@ class Move:
             return "{0}, {1}".format(description, self.submove.describe())
 
 
-class GridItem:
-    def __init__(self, itemtype):
-        self.itemtype = itemtype
-        self.cleared = False
-
-
 class GridItemType:
     count = 0
 
@@ -203,6 +197,7 @@ class Grid:
     GridItemTypeUnknown = GridItemType('Unknown', None)
 
     def __init__(self, xoffset, yoffset, grid=None):
+        self.cleared = None
         if grid is None:
             screengrab = ImageGrab.grab()
 
@@ -235,10 +230,23 @@ class Grid:
                 print("ERROR: Initial accuracy of board recognition is too low.")
                 sys.exit(1)
         else:
+            #Use the supplied grid.
             self.grid = grid
-
             self.xoffset = xoffset
             self.yoffset = yoffset
+
+    def copy_grid(self):
+        """
+        Copies our existing grid array to separate from a prior copy of this class
+        :return:
+        """
+        newgrid = []
+        for x in range(5):
+            column = []
+            for y in range(5):
+                column.append(self.grid[x][y])
+            newgrid.append(column)
+        self.grid = newgrid
 
     def update(self, compareprevious=False):
         screengrab = ImageGrab.grab()
@@ -253,10 +261,10 @@ class Grid:
                 #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
                 griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
                 #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
-                column.append(GridItem(griditemtype))
+                column.append(griditemtype)
                 if accuracy < lowest_accuracy:
                     lowest_accuracy = accuracy
-                if compareprevious and griditemtype != self.grid[x][y].itemtype:
+                if compareprevious and griditemtype != self.grid[x][y]:
                     item_changed = True
             newgrid.append(column)
 
@@ -280,10 +288,10 @@ class Grid:
             for x in range(5):
                 if self.grid[x][y] is None:
                     row += " {0:>10}".format("Empty")
-                elif self.grid[x][y].cleared:
-                    row += " {0:>7}(c)".format(self.grid[x][y].itemtype.name)
+                elif self.cleared is not None and self.cleared[x][y]:
+                    row += " {0:>7}(c)".format(self.grid[x][y].name)
                 else:
-                    row += " {0:>10}".format(self.grid[x][y].itemtype.name)
+                    row += " {0:>10}".format(self.grid[x][y].name)
             desc += row + "\n"
         return desc
 
@@ -299,10 +307,10 @@ class Grid:
             for x in range(5):
                 if self.grid[x][y] is None:
                     row += " "
-                elif self.grid[x][y].cleared:
-                    row += self.grid[x][y].itemtype.name[0].lower()
+                elif self.cleared is not None and self.cleared[x][y]:
+                    row += self.grid[x][y].name[0].lower()
                 else:
-                    row += self.grid[x][y].itemtype.name[0]
+                    row += self.grid[x][y].name[0]
             desc += row + "\n"
         return desc
 
@@ -322,27 +330,28 @@ class Grid:
 
         for x, y in [(x, y) for x in range(4) for y in range(4)]:
             # Swap right
-            possible_moves.append(Move(x, y, self.grid[x][y].itemtype, x+1, y, self.grid[x+1][y].itemtype))
+            possible_moves.append(Move(x, y, self.grid[x][y], x+1, y, self.grid[x+1][y]))
             # Swap down
-            possible_moves.append(Move(x, y, self.grid[x][y].itemtype, x, y+1, self.grid[x][y+1].itemtype))
+            possible_moves.append(Move(x, y, self.grid[x][y], x, y+1, self.grid[x][y+1]))
         # Check bottom row moves.
         y = 4
         for x in range(4):
             # Swap right
-            possible_moves.append(Move(x, y, self.grid[x][y].itemtype, x+1, y, self.grid[x+1][y].itemtype))
+            possible_moves.append(Move(x, y, self.grid[x][y], x+1, y, self.grid[x+1][y]))
         # Check right column moves.
         x = 4
         for y in range(4):
             # Swap down
-            possible_moves.append(Move(x, y, self.grid[x][y].itemtype, x, y+1, self.grid[x][y+1].itemtype))
+            possible_moves.append(Move(x, y, self.grid[x][y], x, y+1, self.grid[x][y+1]))
 
         for move in possible_moves:
             # Skip this move if it's identical color to identical color.
-            if self.grid[move.x1][move.y1].itemtype == self.grid[move.x2][move.y2].itemtype:
+            if self.grid[move.x1][move.y1] == self.grid[move.x2][move.y2]:
                 continue
             if Grid.debug:
                 logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
-            newboard = deepcopy(self)
+            newboard = copy.copy(self)
+            newboard.copy_grid()
             newboard.swap(move)
             points, submove = newboard.simulate(depth)
             move.points = points
@@ -408,9 +417,9 @@ class Grid:
         time.sleep(delay)
 
     def swap(self, swap):
-        tempgem = self.grid[swap.x1][swap.y1]
+        tempitem = self.grid[swap.x1][swap.y1]
         self.grid[swap.x1][swap.y1] = self.grid[swap.x2][swap.y2]
-        self.grid[swap.x2][swap.y2] = tempgem
+        self.grid[swap.x2][swap.y2] = tempitem
 
     def simulate(self, depth=1, fillrandom=False, probabilitypoints=True):
         """
@@ -418,21 +427,16 @@ class Grid:
         depth: How many moves deep to simulate. If greater than 1, then
          additional best moves will be calculated on each simulated result.
         """
-        points = 0.0
-        sub_move = None
-
         if Grid.debug:
             logging.debug("Simulating board:\n{0}".format(self.describe_grid()))
-        firstpoints = self.clear(probabilitypoints)
+        
+        sub_move = None
+        points = self.clear(probabilitypoints)
 
-        simpoints = 0
-        newpoints = firstpoints
-        while newpoints > 0:
-            simpoints += newpoints
-            self.drop()
+        while self.drop() > 0:
             self.fill(fillrandom)
-            newpoints = self.clear(probabilitypoints)
-        points += float(simpoints)
+            points += self.clear(probabilitypoints)
+
         if Grid.debug:
             logging.debug("Points: {0} End Board:\n{1}".format(points, self.describe_grid()))
 
@@ -446,21 +450,28 @@ class Grid:
         """
         Examine grid for cleared gems, drop remaining gems above.
         """
+        if self.cleared is None:
+            print("No cleared data, can't drop.")
+            sys.exit(1)
+        drop_count = 0
         # Drop the columns.
         for x in range(5):
-            for y in reversed(range(5)):
-                while not self.grid[x][y] is None and self.grid[x][y].cleared:
-                    if y > 0:
-                        # Drop down the items above.
-                        for y2 in reversed(range(y)):
-                            self.grid[x][y2 + 1] = self.grid[x][y2]
-                    # Clear the top item.
-                    self.grid[x][0] = None
-        if Grid.debug:
-            for x, y in [(x, y) for x in range(5) for y in range(5)]:
-                if self.grid[x][y] is not None and self.grid[x][y].cleared:
-                    print("ERROR: Grid was not fully cleared.")
-                    sys.exit(1)
+            newcolumn = [None, None, None, None, None]
+            # Which row in the old column to pull from.
+            yold = 4
+            for ynew in reversed(range(5)):
+                # Find the next uncleared gem.
+                while yold >= 0 and self.cleared[x][yold]:
+                    yold -= 1
+                if yold < 0:
+                    # Can't find uncleared item to drop.
+                    drop_count += 1
+                else:
+                    newcolumn[ynew] = self.grid[x][yold]
+                    yold -= 1
+            self.grid[x] = newcolumn
+        self.cleared = None
+        return drop_count
 
     def fill(self, fillrandom=False):
         """
@@ -469,24 +480,32 @@ class Grid:
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
             if self.grid[x][y] is None:
                 if fillrandom:
-                    self.grid[x][y] = GridItem(Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))])
+                    self.grid[x][y] = Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))]
                 else:
-                    self.grid[x][y] = GridItem(Grid.GridItemTypeUnknown)
+                    self.grid[x][y] = Grid.GridItemTypeUnknown
 
-    @staticmethod
-    def clear_items(item1, item2, item3):
-        if item1.itemtype == Grid.GridItemTypeUnknown or \
-                item2.itemtype == Grid.GridItemTypeUnknown or \
-                item3.itemtype == Grid.GridItemTypeUnknown:
+    def clear_items(self, x1, y1, x2, y2, x3, y3):
+        if self.grid[x1][y1] == Grid.GridItemTypeUnknown or \
+                self.grid[x2][y2] == Grid.GridItemTypeUnknown or \
+                self.grid[x3][y3] == Grid.GridItemTypeUnknown:
             return
-        elif item1.itemtype == item2.itemtype and item2.itemtype == item3.itemtype:
-            item1.cleared = True
-            item2.cleared = True
-            item3.cleared = True
+        elif self.grid[x1][y1] == self.grid[x2][y2] and self.grid[x2][y2] == self.grid[x3][y3]:
+            self.cleared[x1][y1] = True
+            self.cleared[x2][y2] = True
+            self.cleared[x3][y3] = True
 
     def clear(self, probabilitypoints=True):
-        # This method should be overriden and dfeined fot the specific game.
-        raise Exception("clear method not implemented.")
+        self.cleared = []
+        for x in range(5):
+            self.cleared.append([False]*5)
+        # Scan rows
+        for x, y in [(x, y) for x in range(3) for y in range(5)]:
+            self.clear_items(x, y, x+1, y, x+2, y)
+        # Scan columns
+        for x, y in [(x, y) for x in range(5) for y in range(3)]:
+            self.clear_items(x, y, x, y+1, x, y+2)
+        # Method should be overridden from here to calculate and return the points
+        return -1
 
     def simulate_play(self, depth=2):
         # Do a simulation run
@@ -494,7 +513,7 @@ class Grid:
         for x in range(5):
             column = []
             for y in range(5):
-                column.append(GridItem(Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))]))
+                column.append(Grid.GridItemTypes[random.randrange(len(Grid.GridItemTypes))])
             randomgrid.append(column)
         self.grid = randomgrid
         # Normalize the board so nothing is ready to clear.
