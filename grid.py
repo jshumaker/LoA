@@ -528,6 +528,7 @@ class Grid:
         print("Random starting grid:")
         self.print_grid()
 
+        starttime = time.time()
         total_points = 0
         total_moves = 0
         while True:
@@ -542,8 +543,8 @@ class Grid:
                 self.swap(move)
                 points, sub_move = self.simulate(fillrandom=True, probabilitypoints=False)
                 total_points += points
-                print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2}".format(
-                    points, (float(total_points) / total_moves), total_moves))
+                print("Actual points: {0} Average points: {1:0.1f} Energy Spent: {2} Average Calc Time: {3:0.1f}".format(
+                    points, (float(total_points) / total_moves), total_moves, (time.time() - starttime) / total_moves))
                 if Grid.fast0:
                     move = move.submove
                 else:
