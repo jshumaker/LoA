@@ -7,13 +7,9 @@ class Board(Grid):
         """
         Mark gems as cleared and count points.
         """
-        # Calculate which gems to remove, counting how many of each color are removed.
-        # Scan rows
-        for x, y in [(x, y) for x in range(3) for y in range(5)]:
-            self.clear_items(self.grid[x][y], self.grid[x+1][y], self.grid[x+2][y])
-        # Scan columns
-        for x, y in [(x, y) for x in range(5) for y in range(3)]:
-            self.clear_items(self.grid[x][y], self.grid[x][y+1], self.grid[x][y+2])
+        # Build in sets up the self.cleared grid.
+        Grid.clear(self, probabilitypoints)
+
         # Count what is removed.
         removed = {}
         for itemtype in Grid.GridItemTypes:
@@ -25,15 +21,15 @@ class Board(Grid):
         possibly_removed[Grid.GridItemTypeUnknown] = []
 
         for x, y in [(x, y) for x in range(5) for y in range(5)]:
-            if self.grid[x][y].cleared >= 1.0:
-                if self.grid[x][y].itemtype == Grid.GridItemTypeUnknown:
+            if self.cleared[x][y] >= 1.0:
+                if self.grid[x][y] == Grid.GridItemTypeUnknown:
                     print("ERROR: unknown had probability {0:0.3f}".format(self.grid[x][y].cleared))
                     self.print_grid()
                     sys.exit(1)
                 else:
-                    removed[self.grid[x][y].itemtype] += 1
-            elif self.grid[x][y].cleared > 0.0:
-                possibly_removed[self.grid[x][y].itemtype].append(self.grid[x][y].cleared)
+                    removed[self.grid[x][y]] += 1
+            elif self.cleared[x][y] > 0.0:
+                possibly_removed[self.grid[x][y]].append(self.cleared[x][y])
 
         colors_cleared = 0
         gems_cleared = 0
@@ -146,7 +142,7 @@ if args.calibrate:
     sys.exit(0)
 
 if args.simulate:
-    board = Board(0, 0, [])
+    board = Board(0, 0, [[None]*5]*5)
     if args.energy < 1:
         board.simulate_play(args.depth)
     else:
