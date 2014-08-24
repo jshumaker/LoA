@@ -274,6 +274,12 @@ class Grid:
         if compareprevious and not item_changed:
             print("Warning, grid did not change.")
         self.grid = newgrid
+
+        # Make sure the game didn't enter some bad state.
+        self.clear()
+        if self.drop() > 0:
+            print("ERROR: The updated grid contains gems that should have cleared.")
+            sys.exit(1)
         return True
 
     def describe_grid_large(self):
