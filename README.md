@@ -4,7 +4,10 @@ All scripts are generally tested to work with Python 3.x
 
 tt.py
 -----
-Attempts to simulate Team Tournament battles. Requires manually editing the code currently to setup what to simulate.
+Attempts to simulate Team Tournament battles. Configuration of player matchup results in tt.yml
+
+Requires PyYAML to be installed:
+http://pyyaml.org/wiki/PyYAML
 
 gemology.py
 -----------

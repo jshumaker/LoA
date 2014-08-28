@@ -1,0 +1,86 @@
+players:
+    Tiver:
+        # Legendary
+        icebow: false
+        Sepiroth: false
+        Serra: true
+        Draconic: true
+        Bhella: true
+        #PikachuSquad
+        Levita: true
+        Kyosuke: true
+        GOLDMOON: true
+        Alexxandria: false
+        Morrigan: true
+    Xyern:
+        # Legendary
+        icebow: false
+        Sepiroth: true
+        Serra: true
+        Draconic: true
+        Bhella: true
+        #PikachuSquad
+        Levita: true
+        Kyosuke: true
+        GOLDMOON: true
+        Alexxandria: false
+        Morrigan: true
+    Shep:
+        # Legendary
+        icebow: false
+        Sepiroth: true
+        Serra: true
+        Draconic: true
+        Bhella: true
+        #PikachuSquad
+        Levita: true
+        Kyosuke: true
+        GOLDMOON: true
+        Alexxandria: false
+        Morrigan: true
+    Kirya:
+        # Legendary
+        icebow: false
+        Sepiroth: false
+        Serra: false
+        Draconic: true
+        Bhella: true
+        #PikachuSquad
+        Levita: true
+        Kyosuke: true
+        GOLDMOON: true
+        Alexxandria: false
+        Morrigan: false
+    Corn:
+        # Legendary
+        icebow: false
+        Sepiroth: false
+        Serra: false
+        Draconic: false
+        Bhella: false
+        #PikachuSquad
+        Levita: true
+        Kyosuke: true
+        GOLDMOON: true
+        Alexxandria: false
+        Morrigan: false
+
+teams:
+    moo:
+        - Tiver
+        - Xyern
+        - Corn
+        - Kirya
+        - Shep
+    Legendary:
+        - Serra
+        - Bhella
+        - Draconic
+        - Sepiroth
+        - icebow
+    PikachuSquad:
+        - Morrigan
+        - GOLDMOON
+        - Kyosuke
+        - Levita
+        - Alexxandria
