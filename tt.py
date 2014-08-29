@@ -111,7 +111,10 @@ if not args.team2 in teams:
 
 print("Team 1 current order: " + ', '.join(teams[args.team1]))
 print("Team 2 current order: " + ', '.join(teams[args.team2]))
-
+if simulate(teams[args.team1], teams[args.team2]):
+    print("Current result: {0} wins.".format(args.team1))
+else:
+    print("Current result: {0} wins.".format(args.team2))
 # First assume the team2 is following the current order, find formations that beat it.
 print("="*80)
 print("Formations which beat {0}:".format(', '.join(teams[args.team2])))
@@ -128,14 +131,19 @@ if len(sane_team2_orders) == 0:
     print("The other team has no chance to beat you!")
 else:
     results = compare_formationlists(list(itertools.permutations(teams[args.team1], 5)), sane_team2_orders)
+    print("Chance | Vs. Current | Order")
     for order, chance in results:
         if chance > 0.0:
-            print('{0}% chance of winning Order: {1}'.format(chance, ', '.join(order)))
+            if simulate(order, teams[args.team2]):
+                vscurrent = "yes"
+            else:
+                vscurrent = " no"
+            print('{0:0.1f}%  | {1} | {2}'.format(chance, vscurrent, ', '.join(order)))
 
 
 # Figure out team2 counter orders to team1's current order, then figure out team1's best counters to those counters.
 print("="*80)
-print('Calculating best counter counter orders:')
+print('Calculating best counter counter orders, chance is vs. their best counter orders.')
 counters = []
 for order in list(itertools.permutations(teams[args.team2], 5)):
     if not simulate(teams['moo'], order):
@@ -146,10 +154,12 @@ if len(counters) == 0:
     print("Opposing team has no viable counters.")
     sys.exit(0)
 
+print("Chance | Vs. Current | Order")
 counter_counters = compare_formationlists(list(itertools.permutations(teams[args.team1], 5)), counters)
 for order, chance in counter_counters:
     if chance > 0.0:
-        if simulate(order,teams[args.team2]):
-            print('{0}% chance of winning, beats old order Order: {1}'.format(chance, ', '.join(order)))
+        if simulate(order, teams[args.team2]):
+            vscurrent = "yes"
         else:
-            print('{0}% chance of winning, lose to old order Order: {1}'.format(chance, ', '.join(order)))
+            vscurrent = " no"
+        print('{0:0.1f}%  | {1} | {2}'.format(chance, vscurrent, ', '.join(order)))

@@ -1,3 +1,28 @@
+teams:
+    moo:
+        - Shep
+        - Kirya
+        - Corn
+        - Tiver
+        - Xyern
+    Legendary:
+        - Serra
+        - Bhella
+        - Draconic
+        - Sepiroth
+        - icebow
+    PikachuSquad:
+        - Alexxandria
+        - Levita
+        - GOLDMOON
+        - Kyosuke
+        - Morrigan
+    CryMeARiver:
+        - JayS8980
+        - Izzeren
+        - DeViL
+        - Milpol
+        - ActTheFool
 players:
     Tiver:
         # Legendary
@@ -6,12 +31,18 @@ players:
         Serra: true
         Draconic: true
         Bhella: true
-        #PikachuSquad
+        # PikachuSquad
         Levita: true
         Kyosuke: true
         GOLDMOON: true
         Alexxandria: false
         Morrigan: true
+        # CryMeARiver
+        JayS8980: false
+        Izzeren: false
+        DeViL: true
+        Milpol: false
+        ActTheFool: true
     Xyern:
         # Legendary
         icebow: false
@@ -19,12 +50,18 @@ players:
         Serra: true
         Draconic: true
         Bhella: true
-        #PikachuSquad
+        # PikachuSquad
         Levita: true
         Kyosuke: true
         GOLDMOON: true
-        Alexxandria: false
+        Alexxandria: true
         Morrigan: true
+        # CryMeARiver
+        JayS8980: false
+        Izzeren: true
+        DeViL: true
+        Milpol: true
+        ActTheFool: true
     Shep:
         # Legendary
         icebow: false
@@ -32,12 +69,18 @@ players:
         Serra: true
         Draconic: true
         Bhella: true
-        #PikachuSquad
+        # PikachuSquad
         Levita: true
         Kyosuke: true
         GOLDMOON: true
         Alexxandria: false
         Morrigan: true
+        # CryMeARiver
+        JayS8980: false
+        Izzeren: true
+        DeViL: true
+        Milpol: true
+        ActTheFool: true
     Kirya:
         # Legendary
         icebow: false
@@ -45,12 +88,18 @@ players:
         Serra: false
         Draconic: true
         Bhella: true
-        #PikachuSquad
+        # PikachuSquad
         Levita: true
         Kyosuke: true
         GOLDMOON: true
         Alexxandria: false
         Morrigan: false
+        # CryMeARiver
+        JayS8980: false
+        Izzeren: false
+        DeViL: true
+        Milpol: false
+        ActTheFool: true
     Corn:
         # Legendary
         icebow: false
@@ -58,29 +107,15 @@ players:
         Serra: false
         Draconic: false
         Bhella: false
-        #PikachuSquad
+        # PikachuSquad
         Levita: true
         Kyosuke: true
         GOLDMOON: true
         Alexxandria: false
         Morrigan: false
-
-teams:
-    moo:
-        - Tiver
-        - Xyern
-        - Corn
-        - Kirya
-        - Shep
-    Legendary:
-        - Serra
-        - Bhella
-        - Draconic
-        - Sepiroth
-        - icebow
-    PikachuSquad:
-        - Morrigan
-        - GOLDMOON
-        - Kyosuke
-        - Levita
-        - Alexxandria
+        # CryMeARiver
+        JayS8980: false
+        Izzeren: false
+        DeViL: true
+        Milpol: false
+        ActTheFool: true
