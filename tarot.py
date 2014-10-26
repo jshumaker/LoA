@@ -323,6 +323,8 @@ while level < 10:
     logging.info("Flips left: {0}".format(flips_left))
     level += 1
     max_flips = int(len(card_positions[level]) * 1.5) + 1
+    if len(card_positions[level]) % 4 != 0:
+        max_flips += 1
     if max_flips > flips_left:
         if args.force:
             logging.warning("Not enough flips remaining to guarantee beating next level. Max flips for next level: {0}".format(max_flips))
