@@ -210,12 +210,12 @@ def detect_card(l, cardnum, dumb=False):
             xoffset + card_positions[l][cardnum][0] + card_width,
             yoffset + card_positions[l][cardnum][1] + card_height)
     retries = 0
-    # Retry up to 30 times with a delay of 100ms between tries to detect the card. As it takes ~100ms to screengrab
-    # this equals about 6 seconds of retrying.
+    # Retry up to 15 times with a delay of 100ms between tries to detect the card. As it takes ~100ms to screengrab
+    # this equals about 3 seconds of retrying.
     if dumb:
         retry_max = 1
     else:
-        retry_max = 30
+        retry_max = 15
     while retries < retry_max:
         retries += 1
         card_image = ImageGrab.grab(bbox)
@@ -271,66 +271,74 @@ def play_level(l):
     unknownpos = 0
     matches_remaining = len(card_positions[l]) / 2
     while matches_remaining > 0:
-        if unknownpos >= len(cards_on_board):
-            # We've detected all cards, but there's some match remaining
-            for c1 in range(len(cards_on_board)):
-                if not cards_on_board[c1].matched:
-                    for c2 in range(len(cards_on_board)):
-                        if c1 != c2 and cards_on_board[c1] == cards_on_board[c2]:
-                            flip_card(l, c1)
-                            time.sleep(0.5)
-                            flip_card(l, c2)
-                            time.sleep(1.0)
-                            cards_on_board[c1].matched = True
-                            cards_on_board[c2].matched = True
-                            matches_remaining -= 1
-        else:
-            # Flip the next unknown card.
+        # Check if we know of any matches we can flip.
+        for c1 in range(len(cards_on_board)):
+            if cards_on_board[c1].name is not None and not cards_on_board[c1].matched:
+                for c2 in range(len(cards_on_board)):
+                    if c1 != c2 and cards_on_board[c1] == cards_on_board[c2]:
+                        flip_card(l, c1)
+                        time.sleep(0.5)
+                        flip_card(l, c2)
+                        time.sleep(1.0)
+                        cards_on_board[c1].matched = True
+                        cards_on_board[c2].matched = True
+                        matches_remaining -= 1
+                        time.sleep(0.300)
+                        continue
+
+        # Flip the next unknown card.
+        flip_card(l, unknownpos)
+        # Detect the card.
+        cards_on_board[unknownpos].name = detect_card(l, unknownpos)
+
+        # Check if this card matches any we know.
+        matched = False
+        for i in range(len(cards_on_board)):
+            if i != unknownpos and cards_on_board[i] == cards_on_board[unknownpos]:
+                # We know the match for this, match it!
+                flip_card(l, i)
+                matches_remaining -= 1
+                cards_on_board[i].matched = True
+                cards_on_board[unknownpos].matched = True
+                matched = True
+                break
+        unknownpos += 1
+        if not matched:
+            # No match known, let's detect another card.
             flip_card(l, unknownpos)
             # Detect the card.
             cards_on_board[unknownpos].name = detect_card(l, unknownpos)
-
-            # Check if this card matches any we know.
-            matched = False
-            for i in range(len(cards_on_board)):
-                if i != unknownpos and cards_on_board[i] == cards_on_board[unknownpos]:
-                    # We know the match for this, match it!
-                    flip_card(l, i)
-                    matches_remaining -= 1
-                    cards_on_board[i].matched = True
-                    cards_on_board[unknownpos].matched = True
-                    matched = True
-                    break
+            # Check if this is a match
+            if cards_on_board[unknownpos] == cards_on_board[unknownpos - 1]:
+                cards_on_board[unknownpos].matched = True
+                cards_on_board[unknownpos - 1].matched = True
+                matches_remaining -= 1
+            else:
+                # Let's wait for the cards to flip back over
+                cardpos = (xoffset + card_positions[l][unknownpos][0] + int(card_width / 2),
+                           yoffset + card_positions[l][unknownpos][1] + int(card_height / 2))
+                while True:
+                    Mouse.move(*cardpos)
+                    if Mouse.cursor_is_hand():
+                        break
+                    time.sleep(0.100)
             unknownpos += 1
-            if not matched:
-                # No match known, let's detect another card.
-                flip_card(l, unknownpos)
-                # Detect the card.
-                cards_on_board[unknownpos].name = detect_card(l, unknownpos)
-                # Check if this is a match
-                if cards_on_board[unknownpos] == cards_on_board[unknownpos - 1]:
-                    cards_on_board[unknownpos].matched = True
-                    cards_on_board[unknownpos - 1].matched = True
-                    matches_remaining -= 1
-                unknownpos += 1
-            time.sleep(1.3)
+        time.sleep(0.3)
 
 while level < 10:
+    max_flips = int(len(card_positions[level]) * 1.75)
+    if max_flips > flips_left:
+        if args.force:
+            logging.warning("Not enough flips remaining. Estimated bad case flips for next level: {0}".format(max_flips))
+        else:
+            logging.error("Not enough flips remaining. Estimated bad case flips for next level: {0}".format(max_flips))
+            sys.exit(1)
     play_level(level)
     if level < len(flips_gained):
         flips_left += flips_gained[level]
         logger.debug("Added {0} flips.".format(flips_gained[level]))
     logging.info("Flips left: {0}".format(flips_left))
     level += 1
-    max_flips = int(len(card_positions[level]) * 1.5) + 1
-    if len(card_positions[level]) % 4 != 0:
-        max_flips += 1
-    if max_flips > flips_left:
-        if args.force:
-            logging.warning("Not enough flips remaining to guarantee beating next level. Max flips for next level: {0}".format(max_flips))
-        else:
-            logging.error("Not enough flips remaining to guarantee beating next level. Max flips for next level: {0}".format(max_flips))
-            sys.exit(1)
     if args.singlelevel:
         sys.exit(0)
     if level == 1:
