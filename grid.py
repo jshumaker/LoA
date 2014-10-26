@@ -1,45 +1,16 @@
 __author__ = 'Jody Shumaker'
 
-from ctypes import *
-import math
-import win32api
-import win32con
-import win32gui
 import itertools
-from PIL import ImageGrab
 import copy
 import sys
 import logging
 import time
 import random
 
+from PIL import ImageGrab
 
-class Color:
-    def __init__(self, r, g, b, a):
-        self.r = r
-        self.g = g
-        self.b = b
-        self.a = a
-        # Calculate the furthest distance a color could be from this color.
-        self.max_distance = math.sqrt(
-            (self.r if self.r > 128 else 255 - self.r)**2 +
-            (self.g if self.g > 128 else 255 - self.g)**2 +
-            (self.b if self.b > 128 else 255 - self.b)**2
-        )
-
-    def __str__(self):
-        return "R{0:03d}G{1:03d}B{2:03d}A{3:03d}".format(int(self.r), int(self.g), int(self.b), int(self.a))
-
-    def compare(self, color2):
-        distance = math.sqrt((self.r - color2.r)**2 + (self.g - color2.g)**2 + (self.b - color2.b)**2)
-        if distance < 1:
-            distance = 1
-        accuracy = (((self.max_distance - distance) / self.max_distance) ** 3)
-        # Let's consider 20 % a rough floor. It's rare to get below that without looking at extremes
-        accuracy = (accuracy - 0.20) / 0.8
-        if accuracy < 0:
-            accuracy = 0
-        return accuracy
+from utility.mouse import *
+from utility.screen import *
 
 
 def guess_grid_item(pixel):
@@ -67,71 +38,6 @@ def calibrate_colors():
             row.append(get_avg_pixel(screengrab, posx, posy))
 
         print(", ".join([str(color) for color in row]))
-
-
-def get_pixel(image, x, y):
-    r, g, b = image.getpixel((x, y))
-    return Color(r, g, b, 0)
-
-
-def get_avg_pixel(image, x, y, r=15):
-    avgpixel = Color(0, 0, 0, 0)
-    count = (r * 2) ** 2
-    for posx in range(x - r, x + r):
-        for posy in range(y - r, y + r):
-            p = get_pixel(image, posx, posy)
-            avgpixel.r += p.r / float(count)
-            avgpixel.g += p.g / float(count)
-            avgpixel.b += p.b / float(count)
-            avgpixel.a += p.a / float(count)
-    return avgpixel
-
-
-# noinspection PyPep8Naming
-class _point_t(Structure):
-    _fields_ = [
-        ('x',  c_long),
-        ('y',  c_long),
-    ]
-
-
-class Mouse:
-    @staticmethod
-    def get_position():
-        point = _point_t()
-        result = windll.user32.GetCursorPos(pointer(point))
-        if result:
-            return point.x, point.y
-        else:
-            return None
-
-    @staticmethod
-    def move(x, y):
-        win32api.SetCursorPos((x, y))
-
-    @staticmethod
-    def click(x, y):
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
-
-    arrow_cursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
-    hand_cursor = win32api.LoadCursor(0, win32con.IDC_HAND)
-
-    @staticmethod
-    def get_cursor():
-        flags, current_cursor, position = win32gui.GetCursorInfo()
-        return current_cursor
-
-    @staticmethod
-    def cursor_is_hand():
-        flags, current_cursor, position = win32gui.GetCursorInfo()
-        return current_cursor == Mouse.hand_cursor
-
-    @staticmethod
-    def cursor_is_arrow():
-        flags, current_cursor, position = win32gui.GetCursorInfo()
-        return current_cursor == Mouse.arrow_cursor
 
 
 class Move:
