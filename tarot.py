@@ -272,7 +272,7 @@ def detect_card(l, cardnum, dumb=False):
     if dumb:
         retry_max = 1
     else:
-        retry_max = 15
+        retry_max = 60
     while retries < retry_max:
         retries += 1
         card_image = ImageGrab.grab(bbox)
