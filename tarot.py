@@ -17,8 +17,9 @@ parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards
 parser.add_argument('--level', '-l', type=int, default=1, help="""
 Level we are starting on, defaults to 1.
 """)
-parser.add_argument('--flips', '-f', type=int, default=15, help="""
-Number of flips remaining, defaults to 15.
+parser.add_argument('--force', action='store_true', help="""
+Play a level even if not enough flips to complete it. Additionally
+keep flipping even if we don't think we have enough flips left.
 """)
 parser.add_argument('--recognize_file', '-r', help="""
 Parse a given file, giving card values for each position and outputting png's for unrecognized cards.
@@ -35,9 +36,8 @@ Enable debug mode, a tarot.log file will be output with extra details.
 parser.add_argument('--singlelevel', '-s', action='store_true', help="""
 Only play 1 level, good for debugging.
 """)
-parser.add_argument('--force', action='store_true', help="""
-Play a level even if not enough flips to complete it. Additionally
-keep flipping even if we don't think we have enough flips left.
+parser.add_argument('--guessflips', action='store_true', help="""
+Try to parse the number of flips remaining.
 """)
 args = parser.parse_args()
 
@@ -63,7 +63,7 @@ logger.addHandler(ch)
 
 
 level = args.level - 1
-flips_left = args.flips
+
 
 top_left_color = (1, 9, 14)
 # Position in test images: l1-3,l9-10 184,211  l5-6 129, 214
@@ -115,7 +115,6 @@ flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34]
 card_width = 70
 card_height = 123
 
-print("Loading cards...")
 logging.info("Loading cards...")
 cards = []
 scriptdir = os.path.dirname(os.path.realpath(__file__))
@@ -125,6 +124,16 @@ for file in glob.glob(globstring):
     name, ext = os.path.splitext(name)
     cards.append((name, Image.open(file).histogram()))
     logging.debug("Loaded card: {0}".format(name))
+
+logging.info("Loading digits...")
+digits = []
+scriptdir = os.path.dirname(os.path.realpath(__file__))
+globstring = os.path.join(scriptdir, "digits/*.png")
+for file in glob.glob(globstring):
+    name = os.path.basename(file)
+    name, ext = os.path.splitext(name)
+    digits.append((name, Image.open(file)))
+    logging.debug("Loaded digit: {0}".format(name))
 
 
 def match_card(image):
@@ -165,6 +174,49 @@ def recognize_file():
 if args.recognize_file:
     recognize_file()
 
+flips_offsetx = 680
+flips_offsety = 20
+digit_width = 10
+digit_height = 16
+
+
+def match_digit(i1):
+    # This works as the threshold a match must be under to be reliable.
+    best_rms = 3000.0
+    best_digit = None
+    for digit, i2 in digits:
+        rms = 0.0
+        for x in range(digit_width - 1):
+            for y in range(digit_height - 1):
+                (r1, g1, b1) = i1.getpixel((x, y))
+                (r2, g2, b2) = i2.getpixel((x, y))
+                rms += math.sqrt((r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2)
+        logging.debug("Compare vs. {0}, rms: {1}".format(digit, rms))
+        if rms < best_rms:
+            best_digit = digit
+    return best_digit
+
+def parse_flips():
+    value = 0
+    for x in range(3):
+        digit_pos = (xoffset + flips_offsetx + (x * digit_width), yoffset + flips_offsety,
+                     xoffset + flips_offsetx + (x * digit_width) + digit_width - 1, yoffset + flips_offsety + digit_height - 1)
+        digit_image = ImageGrab.grab(digit_pos)
+        digit_value = match_digit(digit_image)
+        if digit_value == 'end':
+            # Last digit was read. return value.
+            return value
+        if digit_value is None:
+            imagefile = "digit{0}.png".format(x)
+            logger.warning('Failed to match digit, saving to ' + imagefile)
+            digit_image.save(imagefile)
+        else:
+            value = value * 10 + int(digit_value)
+        digit_image.close()
+
+    return value
+
+
 if len(card_positions[level]) == 0:
     logging.error("Don't know card positions for level {0}".format(level + 1))
     sys.exit(1)
@@ -189,6 +241,11 @@ offset_search()
 logging.info("Top left found at {0},{1}".format(xoffset, yoffset))
 Mouse.click(xoffset, yoffset)
 time.sleep(0.5)
+
+if args.guessflips:
+    flips_left_guess = parse_flips()
+    print("Guessed {0} flips left.".format(flips_left_guess))
+    sys.exit(0)
 
 
 def flip_card(l, cardnum):
@@ -301,6 +358,7 @@ def play_level(l):
                 cards_on_board[i].matched = True
                 cards_on_board[unknownpos].matched = True
                 matched = True
+                time.sleep(0.2)
                 break
         unknownpos += 1
         if not matched:
@@ -325,6 +383,7 @@ def play_level(l):
             unknownpos += 1
         time.sleep(0.3)
 
+flips_left = parse_flips()
 while level < 10:
     max_flips = int(len(card_positions[level]) * 1.75)
     if max_flips > flips_left:
@@ -337,12 +396,11 @@ while level < 10:
     if level < len(flips_gained):
         flips_left += flips_gained[level]
         logger.debug("Added {0} flips.".format(flips_gained[level]))
+
+    flips_left = parse_flips()
     logging.info("Flips left: {0}".format(flips_left))
     level += 1
     if args.singlelevel:
-        sys.exit(0)
-    if level == 1:
-        logging.warning("The flips left can change as you start first level, please start again from level 2.")
         sys.exit(0)
     time.sleep(3.0)
 
