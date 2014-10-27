@@ -387,11 +387,15 @@ flips_left = parse_flips()
 while level < 10:
     max_flips = int(len(card_positions[level]) * 1.75)
     if max_flips > flips_left:
-        if args.force:
-            logging.warning("Not enough flips remaining. Estimated bad case flips for next level: {0}".format(max_flips))
-        else:
-            logging.error("Not enough flips remaining. Estimated bad case flips for next level: {0}".format(max_flips))
-            sys.exit(1)
+        logging.warning("Not enough flips remaining. Estimated bad case flips for next level: {0}".format(max_flips))
+        if not args.force:
+            answer = input("Do you wish to continue? (y/n): ")
+            if answer != 'y':
+                sys.exit(1)
+            else:
+                Mouse.click(xoffset, yoffset)
+                # Check if flips were added
+                flips_left = parse_flips()
     play_level(level)
     if level < len(flips_gained):
         flips_left += flips_gained[level]
