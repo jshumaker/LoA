@@ -4,6 +4,7 @@ from ctypes import *
 import win32con
 import win32gui
 import win32api
+import time
 
 
 # noinspection PyPep8Naming
@@ -38,16 +39,25 @@ class Mouse:
     hand_cursor = win32api.LoadCursor(0, win32con.IDC_HAND)
 
     @staticmethod
-    def get_cursor():
+    def get_cursor(position=None):
+        if position is not None:
+            Mouse.move(*position)
+            time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
         return current_cursor
 
     @staticmethod
-    def cursor_is_hand():
+    def cursor_is_hand(position=None):
+        if position is not None:
+            Mouse.move(*position)
+            time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
         return current_cursor == Mouse.hand_cursor
 
     @staticmethod
-    def cursor_is_arrow():
+    def cursor_is_arrow(position=None):
+        if position is not None:
+            Mouse.move(*position)
+            time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
         return current_cursor == Mouse.arrow_cursor

@@ -47,3 +47,15 @@ def get_avg_pixel(image, x, y, r=15):
             avgpixel.b += p.b / float(count)
             avgpixel.a += p.a / float(count)
     return avgpixel
+
+def compare_images(i1, i2):
+    rms = 0.0
+    if i1.size != i2.size:
+        raise ValueError("Image sizes for comparison do not match. {0} vs {1}".format(i1.size, i2.size))
+    width, height = i1.size
+    for x in range(width - 1):
+        for y in range(height - 1):
+            pixel1 = i1.getpixel((x, y))
+            pixel2 = i2.getpixel((x, y))
+            rms += math.sqrt((pixel1[0] - pixel2[0])**2 + (pixel1[1] - pixel2[1])**2 + (pixel1[2] - pixel2[2])**2)
+    return rms
