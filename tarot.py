@@ -354,13 +354,10 @@ class TarotCards:
                     for c2 in range(len(self.cards_on_board)):
                         if c1 != c2 and self.cards_on_board[c1] == self.cards_on_board[c2]:
                             self.flip_card(c1)
-                            time.sleep(0.5)
                             self.flip_card(c2)
-                            time.sleep(1.0)
                             self.cards_on_board[c1].matched = True
                             self.cards_on_board[c2].matched = True
                             matches_remaining -= 1
-                            time.sleep(0.300)
                             continue
 
             # Flip the next unknown card.
@@ -378,7 +375,6 @@ class TarotCards:
                     self.cards_on_board[i].matched = True
                     self.cards_on_board[unknownpos].matched = True
                     matched = True
-                    time.sleep(0.2)
                     break
             unknownpos += 1
             if not matched:
@@ -395,7 +391,6 @@ class TarotCards:
                     # Let's wait for the cards to flip back over
                     self.wait_unflip(unknownpos)
                 unknownpos += 1
-            time.sleep(0.3)
 
     def play(self):
         self.parse_flips()
