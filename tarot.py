@@ -229,6 +229,9 @@ class TarotCards:
 
     def flip_card(self, cardnum):
         if self.flips_left <= 0:
+            # Let's double check the flips left.
+            self.parse_flips()
+        if self.flips_left <= 0:
             logging.error("No flips remaining!")
             sys.exit(1)
         cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
@@ -236,7 +239,7 @@ class TarotCards:
         logging.debug("Flipping level {0} card {1} at position {2}".format(self.level, cardnum, cardpos))
         cursor = Mouse.get_cursor(cardpos)
         logging.debug("Pre-flip, cursor is: {0}".format(cursor))
-        timeout = time.time() + 6
+        timeout = time.time() + 12
         while time.time() < timeout:
             Mouse.click(*cardpos)
             # Wait for cursor to change to pointer.
@@ -411,7 +414,7 @@ class TarotCards:
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
                 logger.debug("Added {0} flips.".format(flips_gained[self.level]))
-
+            time.sleep(0.5)
             self.parse_flips()
             logging.info("Flips left: {0}".format(self.flips_left))
             self.level += 1
