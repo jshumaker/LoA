@@ -208,12 +208,16 @@ class TarotCards:
     def parse_flips(self):
         value = 0
         for x in range(3):
-            digit_pos = (self.xoffset + flips_offsetx + (x * digit_width),
-                         self.yoffset + flips_offsety,
-                         self.xoffset + flips_offsetx + (x * digit_width) + digit_width - 1,
-                         self.yoffset + flips_offsety + digit_height - 1)
-            digit_image = ImageGrab.grab(digit_pos)
-            digit_value = self.match_digit(digit_image)
+            for searchx in range(-2, 2):
+                for searchy in range(-2, 2):
+                    digit_pos = (self.xoffset + flips_offsetx + (x * digit_width),
+                                 self.yoffset + flips_offsety,
+                                 self.xoffset + flips_offsetx + (x * digit_width) + digit_width - 1,
+                                 self.yoffset + flips_offsety + digit_height - 1)
+                    digit_image = ImageGrab.grab(digit_pos)
+                    digit_value = self.match_digit(digit_image)
+                    if digit_value is not None:
+                        break
             if digit_value == 'end':
                 # Last digit was read.
                 break
