@@ -5,6 +5,7 @@ import win32con
 import win32gui
 import win32api
 import time
+import logging
 
 
 # noinspection PyPep8Naming
@@ -31,6 +32,7 @@ class Mouse:
 
     @staticmethod
     def click(x, y):
+        logging.debug("Clicking: {0},{1}".format(x, y))
         win32api.SetCursorPos((x, y))
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
         win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)

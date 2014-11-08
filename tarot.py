@@ -13,11 +13,9 @@ import math
 import operator
 import time
 
-parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards')
-parser.add_argument('--level', '-l', type=int, default=1, help="""
-Level we are starting on, defaults to 1.
-""")
+parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards.')
 parser.add_argument('--skipstart', '-n', action='store_true', help="""
+Broken currently.
 Skip the start/next button click at the beginning, use when having script continue a level that is in-progress.
 Also triggers automatic level detection.
 """)
@@ -27,12 +25,6 @@ keep flipping even if we don't think we have enough flips left.
 """)
 parser.add_argument('--recognize_file', '-r', help="""
 Parse a given file, giving card values for each position and outputting png's for unrecognized cards.
-""")
-parser.add_argument('--recognize_xoffset', '-x', type=int, help="""
-X offset for recognize file.
-""")
-parser.add_argument('--recognize_yoffset', '-y', type=int, help="""
-Y offset for recognize file.
 """)
 parser.add_argument('--debug', action='store_true', help="""
 Enable debug mode, a tarot.log file will be output with extra details.
@@ -113,30 +105,12 @@ flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34]
 card_width = 70
 card_height = 123
 
-flips_offsetx = 680
+flips_offsetx = 745
 flips_offsety = 20
-level_offsetx = 85
+level_offsetx = 350
 level_offsety = 52
 digit_width = 10
 digit_height = 16
-
-
-def search_offset(radius=2, offsetx=0, offsety=0):
-    """
-    :param radius: Search radius, max distance from 0,0 to generate a point from. Defaults to 2, which will generate
-     a -2, -2 to 2, 2 search pattern spiraling out from center.
-    :return: Yields a x,y tuplet in a spiral sequence from 0,0 limited by radius.
-    :offsetx: amount to offset returned x by.
-    :offsety: amount to offset returned x by.
-    """
-    x = y = 0
-    dx = 0
-    dy = -1
-    for i in range((radius*2 + 1)**2):
-        yield (x + offsetx, y + offsety)
-        if x == y or (x < 0 and x == -y) or (x > 0 and x == 1-y):
-            dx, dy = -dy, dx
-        x, y = x+dx, y+dy
 
 
 class CardOnBoard:
@@ -150,72 +124,108 @@ class CardOnBoard:
 
 
 class TarotCards:
-    def __init__(self, level):
+    def __init__(self):
         self.flips_left = 0
         self.xoffset = 0
         self.yoffset = 0
-        self.level = level
+        self.level = -1
         self.cards_on_board = None
+        self.gamepos = None
+        self.gamesize = None
 
         logging.info("Loading cards...")
         self.tarot_cards = []
         scriptdir = os.path.dirname(os.path.realpath(__file__))
-        globstring = os.path.join(scriptdir, "tarot_cards/*.png")
+        globstring = os.path.join(scriptdir, "tarot/cards/*.png")
         for file in glob.glob(globstring):
             name = os.path.basename(file)
             name, ext = os.path.splitext(name)
-            self.tarot_cards.append((name, Image.open(file).histogram()))
+            # Limit compared card size to 30x20
+            self.tarot_cards.append((name, Image.open(file).crop((0, 0, 15, 15))))
             logging.debug("Loaded card: {0}".format(name))
 
         logging.info("Loading digits...")
         self.digits = []
         scriptdir = os.path.dirname(os.path.realpath(__file__))
-        globstring = os.path.join(scriptdir, "digits/*.png")
+        globstring = os.path.join(scriptdir, "tarot/digits/*.png")
         for file in glob.glob(globstring):
             name = os.path.basename(file)
             name, ext = os.path.splitext(name)
             self.digits.append((name, Image.open(file)))
             logging.debug("Loaded digit: {0}".format(name))
 
-    def find_origin(self, searchx, searchy):
-        # Search for the origin points using x, and y as a guide.
-        origin_image = Image.open("tarot_origin.png")
+    def orient(self):
+        # Get the game window
+        self.gamepos = get_game_window()
+        self.gamesize = (self.gamepos[2] - self.gamepos[0] + 1, self.gamepos[3] - self.gamepos[1] + 1)
+        logging.debug("Game Window position: {0},{1},{2},{3}".format(*self.gamepos))
+
+        Mouse.click(self.gamepos[0] + 2, self.gamepos[1] + 2)
+
+        # Search for start button to center.
+        logging.debug("Searching for start button...")
+        start_image = Image.open("tarot/start.png")
+        searchx = int(self.gamepos[0] + (self.gamesize[0] / 2) - 31)
+        searchy = int(self.gamepos[1] + (self.gamesize[1] / 2) + 97)
+        best_x, best_y = image_search(ImageGrab.grab(), start_image, searchx, searchy)
+        start_image.close()
+
+        if best_x != -1:
+            center_x = best_x + 31
+            center_y = best_y - 97
+            self.level = 0
+            logging.debug("Start button found, offset from expected: {0}, {1}".format(best_x - searchx, best_y - searchy))
+        else:
+            # Search for next button.
+            logging.debug("Searching for next button...")
+            next_image = Image.open("tarot/next.png")
+            searchx = int(self.gamepos[0] + (self.gamesize[0] / 2) - 45)
+            searchy = int(self.gamepos[1] + (self.gamesize[1] / 2) + 65)
+            best_x, best_y = image_search(ImageGrab.grab(), next_image, searchx, searchy)
+            next_image.close()
+            if best_x != -1:
+                center_x = best_x + 45
+                center_y = best_y - 70
+                self.level = self.parse_level() - 1
+                logging.debug("Next button found, offset from expected: {0}, {1}".format(best_x - searchx, best_y - searchy))
+            else:
+                logging.error("Failed to find origin!")
+                sys.exit(1)
+
+        logging.info("Center found at {0},{1}".format(center_x, center_y))
+        logging.info("Starting play at level {0}".format(self.level + 1))
+
+        self.xoffset = center_x - 543
+        self.yoffset = center_y - 306
+
+        # Let's calibrate this with the first card which is never really covered. Requires first card to be unflipped.
+        if self.level < 3:
+            card_corner = Image.open("tarot/back1.png")
+        elif self.level < 5:
+            card_corner = Image.open("tarot/back3.png")
+        elif self.level < 8:
+            card_corner = Image.open("tarot/back5.png")
+        else:
+            card_corner = Image.open("tarot/back8.png")
+        # Adjust card positions.
         screengrab = ImageGrab.grab()
-        # Find the origin point.
-        best_rms = 20.0
-        best_x = -1
-        best_y = -1
-        for x, y in search_offset(radius=20, offsetx=searchx, offsety=searchy):
-            rms = compare_images(origin_image, screengrab.crop((x - 2, y - 2, x + 3, y + 3)))
-            logging.debug("Origin {0},{1}  rms: {2}".format(x, y, rms))
-            if rms < best_rms:
-                best_y = y
-                best_x = x
-            if rms < 0.2:
-                break
-        self.xoffset = best_x
-        self.yoffset = best_y
-
-        if best_x == -1:
-            logging.error("Failed to find origin!")
+        logging.debug("Calibrating via card 0")
+        searchx, searchy = card_positions[self.level][0]
+        searchx += self.xoffset - 6
+        searchy += self.yoffset - 6
+        newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=20)
+        if newx == -1:
+            logging.error("Failed to calibrate")
             sys.exit(1)
+        logging.info("Card offset: {0},{1}".format(newx - searchx, newy - searchy))
+        self.xoffset += newx - searchx
+        self.yoffset += newx - searchx
+        card_corner.close()
 
-        logging.info("Origin found at {0},{1}".format(self.xoffset, self.yoffset))
+        logging.info("Origin at {0},{1}".format(self.xoffset, self.yoffset))
         Mouse.click(self.xoffset, self.yoffset)
-        origin_image.close()
-        time.sleep(0.2)
 
-    def match_card(self, image):
-        h1 = image.histogram()
-        # This works as the threshold a match must be under to be reliable.
-        best_rms = 5.0
-        best_name = None
-        for cardname, h2 in self.tarot_cards:
-            rms = math.sqrt(functools.reduce(operator.add, map(lambda a, b: (a-b)**2, h1, h2))/len(h1))
-            logging.debug("Compare vs. {0}, rms: {1}".format(cardname, rms))
-            if rms < best_rms:
-                best_name = cardname
-        return best_name
+        time.sleep(0.2)
 
     def match_digit(self, i1):
         # This works as the threshold a match must be under to be reliable.
@@ -229,10 +239,11 @@ class TarotCards:
         return best_digit
 
     def parse_flips(self):
+        logging.debug("Parsing flips...")
         value = 0
         for x in range(3):
-            for posx, posy in search_offset(offsetx=flips_offsetx + self.xoffset,
-                                            offsety=flips_offsety + self.yoffset):
+            for posx, posy in search_offset(offsetx=flips_offsetx + self.gamepos[0],
+                                            offsety=flips_offsety + self.gamepos[1]):
                 digit_pos = (posx + (x * digit_width),
                              posy,
                              posx + (x * digit_width) + digit_width - 1,
@@ -240,6 +251,10 @@ class TarotCards:
                 digit_image = ImageGrab.grab(digit_pos)
                 digit_value = self.match_digit(digit_image)
                 if digit_value is not None:
+                    logging.debug("Digit found, offset from expected: {0},{1}".format(
+                        posx - flips_offsetx - self.gamepos[0],
+                        posy - flips_offsety - self.gamepos[1]
+                    ))
                     break
             if digit_value == 'end':
                 # Last digit was read.
@@ -255,10 +270,11 @@ class TarotCards:
         self.flips_left = value
 
     def parse_level(self):
+        logging.debug("Parsing level...")
         value = 0
         for x in range(2):
-            for posx, posy in search_offset(offsetx=level_offsetx + self.xoffset,
-                                            offsety=level_offsety + self.yoffset):
+            for posx, posy in search_offset(offsetx=level_offsetx + self.gamepos[0],
+                                            offsety=level_offsety + self.gamepos[1]):
                 digit_pos = (posx + (x * digit_width),
                              posy,
                              posx + (x * digit_width) + digit_width - 1,
@@ -266,6 +282,10 @@ class TarotCards:
                 digit_image = ImageGrab.grab(digit_pos)
                 digit_value = self.match_digit(digit_image)
                 if digit_value is not None:
+                    logging.debug("Digit found, offset from expected: {0},{1}".format(
+                        posx - level_offsetx - self.gamepos[0],
+                        posy - level_offsety - self.gamepos[1]
+                    ))
                     break
             if digit_value is not None and digit_value != 'end':
                 value = value * 10 + int(digit_value)
@@ -290,7 +310,7 @@ class TarotCards:
             # Wait for cursor to change to pointer.
             clicktimeout = time.time() + 1.0
             while time.time() < clicktimeout and Mouse.get_cursor(cardpos) != Mouse.arrow_cursor:
-                time.sleep(0.050)
+                time.sleep(0.010)
             if Mouse.cursor_is_arrow(cardpos):
                 break
             logging.warning("Card click was not registered for 1 second, clicking again.")
@@ -300,27 +320,25 @@ class TarotCards:
         logging.debug("Flips left: {0}".format(self.flips_left))
 
     def detect_card(self, cardnum, dumb=False):
-        bbox = (self.xoffset + card_positions[self.level][cardnum][0],
-                self.yoffset + card_positions[self.level][cardnum][1],
-                self.xoffset + card_positions[self.level][cardnum][0] + card_width,
-                self.yoffset + card_positions[self.level][cardnum][1] + card_height)
         retries = 0
-        # Retry up to 15 times with a delay of 100ms between tries to detect the card. As it takes ~100ms to screengrab
-        # this equals about 3 seconds of retrying.
         if dumb:
             retry_max = 1
         else:
             retry_max = 60
         while retries < retry_max:
             retries += 1
-            card_image = ImageGrab.grab(bbox)
-            # Check if we recognize this card.
-            card_name = self.match_card(card_image)
+            searchx = self.xoffset + card_positions[self.level][cardnum][0]
+            searchy = self.yoffset + card_positions[self.level][cardnum][1]
+            card_name, x, y = detect_image(ImageGrab.grab(),
+                                           self.tarot_cards,
+                                           searchx,
+                                           searchy,
+                                           radius=2)
             if card_name is not None:
-                logging.info("Matched card {0} to: {1}".format(cardnum, card_name))
+                logging.info("Matched card {0} to: {1}  offset: {2}, {3}".format(cardnum, card_name, searchx - x, searchy - y))
                 self.cards_on_board[cardnum].name = card_name
                 return
-            time.sleep(0.1)
+                time.sleep(0.1)
         if dumb:
             return
 
@@ -346,11 +364,12 @@ class TarotCards:
 
         # Check if game has already started
         cards_flipped = 0
-        for cardnum in range(len(card_positions[self.level])):
-            self.detect_card(cardnum, dumb=True)
-            if self.cards_on_board[cardnum].name is not None:
-                self.cards_on_board[cardnum].matched = True
-                cards_flipped += 1
+        #for cardnum in range(len(card_positions[self.level])):
+        #    logging.debug("Check if level has already been started, scan if any cards can be detected.")
+        #    self.detect_card(cardnum, dumb=True)
+        #    if self.cards_on_board[cardnum].name is not None:
+        #        self.cards_on_board[cardnum].matched = True
+        #        cards_flipped += 1
 
         unknownpos = 0
         matches_remaining = len(card_positions[self.level]) / 2
@@ -364,6 +383,26 @@ class TarotCards:
                 else:
                     Mouse.click(*next_pos)
                 time.sleep(1.0)
+            if self.level < 3:
+                card_corner = Image.open("tarot/back1.png")
+            elif self.level < 5:
+                card_corner = Image.open("tarot/back3.png")
+            elif self.level < 8:
+                card_corner = Image.open("tarot/back5.png")
+            else:
+                card_corner = Image.open("tarot/back8.png")
+            # Adjust card positions.
+            screengrab = ImageGrab.grab()
+            for i in range(len(card_positions[self.level])):
+                logging.debug("Calibrating card {0}".format(i))
+                searchx, searchy = card_positions[self.level][i]
+                searchx += self.xoffset - 6
+                searchy += self.yoffset - 6
+                newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
+                if newx == -1:
+                    logging.warning("Failed to calibrate card position {0}".format(i))
+                card_positions[self.level][i] = (newx + 6 - self.xoffset, newy + 6 - self.yoffset)
+                logging.debug("Card {0} offset: {1},{2}".format(i, newx - searchx, newy - searchy))
         else:
             # Game has already started.
             matches_remaining -= int(cards_flipped / 2)
@@ -429,17 +468,22 @@ class TarotCards:
             if not matched:
                 # No match known, let's detect another card.
                 self.flip_card(unknownpos)
-                # Detect the card.
-                self.detect_card(unknownpos)
-                # Check if this is a match
-                if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
-                    self.cards_on_board[unknownpos].matched = True
-                    self.cards_on_board[unknownpos - 1].matched = True
+                if matches_remaining == 1:
+                    # There was only one match left, the last unknown card should be the match we need.
+                    # We also won't get a chance to identify it as the level will end.
                     matches_remaining -= 1
                 else:
-                    # Let's wait for the cards to flip back over
-                    self.wait_unflip(unknownpos)
-                unknownpos += 1
+                    # Detect the card.
+                    self.detect_card(unknownpos)
+                    # Check if this is a match
+                    if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
+                        self.cards_on_board[unknownpos].matched = True
+                        self.cards_on_board[unknownpos - 1].matched = True
+                        matches_remaining -= 1
+                    else:
+                        # Let's wait for the cards to flip back over
+                        self.wait_unflip(unknownpos)
+                    unknownpos += 1
 
     def play(self, skip_first_start=False):
         self.parse_flips()
@@ -490,19 +534,12 @@ class TarotCards:
                 logging.info("Failed to match, card image saved to: {0}".format(filename))
         sys.exit(0)
 
-tarot = TarotCards(args.level - 1)
+
+tarot = TarotCards()
 if args.recognize_file:
-    tarot.xoffset = args.recognize_xoffset
-    tarot.yoffset = args.recognize_yoffset
     tarot.recognize_file()
 
-if args.level - 1 > len(card_positions) or len(card_positions[args.level - 1]) == 0:
-    logging.error("Don't know card positions for level {0}".format(args.level))
-    sys.exit(1)
-
-# First let's find the top left of the board.
-var = input("Place mouse near the top left of tbe blue/black portion of the Tarot Cards window.")
-tarot.find_origin(*Mouse.get_position())
+tarot.orient()
 
 if args.guessflips:
     tarot.parse_flips()
@@ -511,17 +548,8 @@ if args.guessflips:
 
 if args.skipstart:
     # Let's autodetect the level
-    level = tarot.parse_level()
-    if level > 0:
-        tarot.level = level - 1
-        logging.info("Detected Level: {0}".format(level))
-
-if args.level != 1:
-    level = tarot.parse_level()
-    if level != args.level:
-        logging.error("Detected Level: {0} which does not match level specified.".format(tarot.level + 1))
-        if not args.force:
-            sys.exit(0)
+    logging.error("Skipping the start is unfortunately unsupported at this time.")
+    sys.exit(1)
 
 tarot.play(args.skipstart)
 
