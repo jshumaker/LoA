@@ -292,7 +292,7 @@ class TarotCards:
             digit_image.close()
         return value
 
-    def flip_card(self, cardnum):
+    def flip_card(self, cardnum, detect=False):
         if self.flips_left <= 0:
             # Let's double check the flips left.
             self.parse_flips()
@@ -312,7 +312,16 @@ class TarotCards:
             while time.time() < clicktimeout and Mouse.get_cursor(cardpos) != Mouse.arrow_cursor:
                 time.sleep(0.010)
             if Mouse.cursor_is_arrow(cardpos):
-                break
+                if detect:
+                    if self.detect_card(cardnum):
+                        break
+                    if time.time() > timeout:
+                        logging.error("Failed to detect card {0} level {1}".format(cardnum, self.level))
+                        ImageGrab.grab().save("failed_detection.png")
+                        logging.info("Screenshot saved to failed_detection.png")
+                        sys.exit(1)
+                else:
+                    break
             logging.warning("Card click was not registered for 1 second, clicking again.")
         cursor = Mouse.get_cursor(cardpos)
         logging.debug("Post-flip, cursor is: {0}".format(cursor))
@@ -324,7 +333,7 @@ class TarotCards:
         if dumb:
             retry_max = 1
         else:
-            retry_max = 60
+            retry_max = 30
         while retries < retry_max:
             retries += 1
             searchx = self.xoffset + card_positions[self.level][cardnum][0]
@@ -337,15 +346,9 @@ class TarotCards:
             if card_name is not None:
                 logging.info("Matched card {0} to: {1}  offset: {2}, {3}".format(cardnum, card_name, searchx - x, searchy - y))
                 self.cards_on_board[cardnum].name = card_name
-                return
+                return True
                 time.sleep(0.1)
-        if dumb:
-            return
-
-        logging.error("Failed to match card {0}!".format(cardnum))
-        # Exit out, we shouldn't continue if we failed to detect a card. Better to potentially have this time out than
-        #  to exhaust flips.
-        sys.exit(1)
+        return False
 
     def wait_unflip(self, cardnum):
         cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
@@ -376,7 +379,7 @@ class TarotCards:
         if cards_flipped == 0:
             if not skip_start:
                 # Click start.
-                start_pos = (545 + self.xoffset, 430 + self.yoffset)
+                start_pos = (545 + self.xoffset, 415 + self.yoffset)
                 next_pos = (540 + self.xoffset, 380 + self.yoffset)
                 if self.level == 0:
                     Mouse.click(*start_pos)
@@ -418,9 +421,7 @@ class TarotCards:
                     if card.matched:
                         card.matched = False
                         break
-                self.flip_card(unknownpos)
-                # Detect the card.
-                self.detect_card(unknownpos)
+                self.flip_card(unknownpos, detect=True)
                 # Check if this is a match
                 if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
                     self.cards_on_board[unknownpos].matched = True
@@ -449,9 +450,7 @@ class TarotCards:
                             continue
 
             # Flip the next unknown card.
-            self.flip_card(unknownpos)
-            # Detect the card.
-            self.detect_card(unknownpos)
+            self.flip_card(unknownpos, detect=True)
 
             # Check if this card matches any we know.
             matched = False
@@ -467,14 +466,13 @@ class TarotCards:
             unknownpos += 1
             if not matched:
                 # No match known, let's detect another card.
-                self.flip_card(unknownpos)
                 if matches_remaining == 1:
                     # There was only one match left, the last unknown card should be the match we need.
                     # We also won't get a chance to identify it as the level will end.
                     matches_remaining -= 1
                 else:
                     # Detect the card.
-                    self.detect_card(unknownpos)
+                    self.flip_card(unknownpos, detect=True)
                     # Check if this is a match
                     if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
                         self.cards_on_board[unknownpos].matched = True
