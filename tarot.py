@@ -308,6 +308,7 @@ class TarotCards:
         while time.time() < timeout:
             Mouse.click(*cardpos)
             # Wait for cursor to change to pointer.
+            time.sleep(0.50)
             clicktimeout = time.time() + 1.0
             while time.time() < clicktimeout and Mouse.get_cursor(cardpos) != Mouse.arrow_cursor:
                 time.sleep(0.010)
@@ -469,6 +470,7 @@ class TarotCards:
                 if matches_remaining == 1:
                     # There was only one match left, the last unknown card should be the match we need.
                     # We also won't get a chance to identify it as the level will end.
+                    self.flip_card(unknownpos)
                     matches_remaining -= 1
                 else:
                     # Detect the card.
