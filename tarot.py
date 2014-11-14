@@ -300,7 +300,7 @@ class TarotCards:
             logging.error("No flips remaining!")
             sys.exit(1)
         cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
-                   self.yoffset + card_positions[self.level][cardnum][1] + int(card_height / 2))
+                   self.yoffset + card_positions[self.level][cardnum][1] + 15)
         logging.debug("Flipping level {0} card {1} at position {2}".format(self.level, cardnum, cardpos))
         cursor = Mouse.get_cursor(cardpos)
         logging.debug("Pre-flip, cursor is: {0}".format(cursor))
@@ -353,7 +353,7 @@ class TarotCards:
 
     def wait_unflip(self, cardnum):
         cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
-                   self.yoffset + card_positions[self.level][cardnum][1] + int(card_height / 2))
+                   self.yoffset + card_positions[self.level][cardnum][1] + 15)
         while True:
             Mouse.move(*cardpos)
             if Mouse.cursor_is_hand():
