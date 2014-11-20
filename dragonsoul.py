@@ -55,104 +55,128 @@ class Board(Grid):
             points += (1.0 - (0.8 ** items_cleared)) * items_cleared
         return points
 
-
-parser = argparse.ArgumentParser(description='Automatically play LoA Dragon Souls')
-parser.add_argument('--energy', '-e', type=int, default=-1, help="""
-Remaining energy. If not specified then will be prompted.
-""")
-parser.add_argument('--count', type=float, default=0.0, help="""
-Count factor, defaults to 0.0.  This is multiplied by the number of elements of a specific type being cleared.
- Set above 0 to favor clearing more elements at once, which increases odds of better elements gained.
-""")
-parser.add_argument('--wind', type=float, default=1.0, help="""
-Wind factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
- less, or above 1.0 to favor more.
-""")
-parser.add_argument('--ice', type=float, default=1.0, help="""
-Ice factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
- less, or above 1.0 to favor more.
-""")
-parser.add_argument('--electro', type=float, default=1.0, help="""
-Electro factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
- less, or above 1.0 to favor more.
-""")
-parser.add_argument('--fire', type=float, default=1.0, help="""
-Fire factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
- less, or above 1.0 to favor more.
-""")
-parser.add_argument('--random', type=float, default=1.0, help="""
-Random factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
- less, or above 1.0 to favor more.
-""")
-parser.add_argument('--depth', type=int, default=2, help="""
-How many moves deep to predict. Defaults to 2.
-Warning: potentially 40^depth moves have to be tested. Increasing this
-exponentially increases processing time.
-""")
-parser.add_argument('--delay', type=float, default=1.0, help="""
-How many seconds to wait after clicking. Default is 1.0.
-For slow connections or computers, increase this value.
-""")
-parser.add_argument('--fast0', action='store_true', help="""
-If best move is a zero point move, perform the next submove without recalculating.
-Runs faster, but at expensive of higher average points.
-""")
-parser.add_argument('--debug', action='store_true', help="""
-Enable debug mode, a gemology.log file will be output with details on the tested moves.
-""")
-parser.add_argument('--simulate', action='store_true', help="""
-Enable simulation mode. Script will create a new random board and simulate best moves and results.
-""")
-parser.add_argument('--calibrate', action='store_true', help="""
-Enable calibration mode. Given a mouse position, outputs color grid.
-""")
-args = parser.parse_args()
-
-if args.debug:
-    print("Enabling debug mode.")
-    Grid.debug = True
-
-if args.fast0:
-    Grid.fast0 = True
-
-Grid.delay = args.delay
 Grid.GridItemTypes = [
-    Element('Wind', Color(109, 159, 46, 0), args.wind),
-    Element('Electro', Color(165, 119, 230, 0), args.electro),
-    Element('Ice', Color(61, 174, 210, 0), args.ice),
-    Element('Fire', Color(222, 158, 24, 0), args.fire),
-    Element('Random', Color(118, 81, 51, 0), args.random)
+    Element('Wind', Color(109, 159, 46, 0), 1.0),
+    Element('Electro', Color(165, 119, 230, 0), 1.0),
+    Element('Ice', Color(61, 174, 210, 0), 1.0),
+    Element('Fire', Color(222, 158, 24, 0), 1.0),
+    Element('Random', Color(118, 81, 51, 0), 1.0)
 ]
 
-if args.calibrate:
-    Mouse.get_cursor()
-    calibrate_colors()
-    sys.exit(0)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Automatically play LoA Dragon Souls')
+    parser.add_argument('--energy', '-e', type=int, default=-1, help="""
+    Remaining energy. If not specified then will be prompted.
+    """)
+    parser.add_argument('--count', type=float, default=0.0, help="""
+    Count factor, defaults to 0.0.  This is multiplied by the number of elements of a specific type being cleared.
+     Set above 0 to favor clearing more elements at once, which increases odds of better elements gained.
+    """)
+    parser.add_argument('--wind', type=float, default=1.0, help="""
+    Wind factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+     less, or above 1.0 to favor more.
+    """)
+    parser.add_argument('--ice', type=float, default=1.0, help="""
+    Ice factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+     less, or above 1.0 to favor more.
+    """)
+    parser.add_argument('--electro', type=float, default=1.0, help="""
+    Electro factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+     less, or above 1.0 to favor more.
+    """)
+    parser.add_argument('--fire', type=float, default=1.0, help="""
+    Fire factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+     less, or above 1.0 to favor more.
+    """)
+    parser.add_argument('--random', type=float, default=1.0, help="""
+    Random factor, defaults to 1.0.  This is multiplied by the points for clearing a given element.  Set below 1 to favor
+     less, or above 1.0 to favor more.
+    """)
+    parser.add_argument('--processes', '-p', type=int, default=-1, help="""
+    How many processes to spin up for multiprocessing. Defaults to cpu count.
+    """)
+    parser.add_argument('--depth', type=int, default=3, help="""
+    How many moves deep to predict. Defaults to 3.
+    Warning: potentially 40^depth moves have to be tested. Increasing this
+    exponentially increases processing time.
+    """)
+    parser.add_argument('--delay', type=float, default=1.0, help="""
+    How many seconds to wait after clicking. Default is 1.0.
+    For slow connections or computers, increase this value.
+    """)
+    parser.add_argument('--fast0', action='store_true', help="""
+    If best move is a zero point move, perform the next submove without recalculating.
+    Runs faster, but at expensive of higher average points.
+    """)
+    parser.add_argument('--debug', action='store_true', help="""
+    Enable debug mode, a gemology.log file will be output with details on the tested moves.
+    """)
+    parser.add_argument('--simulate', action='store_true', help="""
+    Enable simulation mode. Script will create a new random board and simulate best moves and results.
+    """)
+    parser.add_argument('--calibrate', action='store_true', help="""
+    Enable calibration mode. Given a mouse position, outputs color grid.
+    """)
+    args = parser.parse_args()
 
-if args.simulate:
-    board = Board(0, 0, [])
-    if args.energy < 1:
-        board.simulate_play(args.depth)
+    if args.debug:
+        print("Enabling debug mode.")
+        Grid.debug = True
+
+    if args.fast0:
+        Grid.fast0 = True
+
+    Grid.delay = args.delay
+
+    # Broken by the current multiprocessing.
+    #Grid.GridItemTypes = [
+    #    Element('Wind', Color(109, 159, 46, 0), args.wind),
+    #    Element('Electro', Color(165, 119, 230, 0), args.electro),
+    #    Element('Ice', Color(61, 174, 210, 0), args.ice),
+    #    Element('Fire', Color(222, 158, 24, 0), args.fire),
+    #    Element('Random', Color(118, 81, 51, 0), args.random)
+    #]
+    for element in Grid.GridItemTypes:
+        if element.name == "Wind":
+            element.factor = args.wind
+        elif element.name == "Electro":
+            element.factor = args.electro
+        elif element.name == "Ice":
+            element.factor = args.ice
+        elif element.name == "Fire":
+            element.factor = args.fire
+        elif element.name == "Random":
+            element.factor = args.random
+
+    if args.calibrate:
+        Mouse.get_cursor()
+        calibrate_colors()
+        sys.exit(0)
+
+    if args.simulate:
+        board = Board(0, 0, [], depth=args.depth, processes=args.processes)
+        if args.energy < 1:
+            board.simulate_play(args.depth)
+        else:
+            board.simulate_play(args.depth, args.energy)
+
+    loglevel = logging.INFO
+    if args.debug:
+        loglevel = logging.DEBUG
+    logging.basicConfig(filename='dragonsoul.log', level=loglevel)
+
+    if args.energy > 0:
+        remaining_energy = args.energy
     else:
-        board.simulate_play(args.depth, args.energy)
+        remaining_energy = int(input("How much dragon soul energy remain: "))
 
-loglevel = logging.INFO
-if args.debug:
-    loglevel = logging.DEBUG
-logging.basicConfig(filename='dragonsoul.log', level=loglevel)
-    
-if args.energy > 0:
-    remaining_energy = args.energy
-else:
-    remaining_energy = int(input("How much dragon soul energy remain: "))
+    var = input("Place mouse over top left element and press enter.")
+    xoffset, yoffset = Mouse.get_position()
 
-var = input("Place mouse over top left element and press enter.")
-xoffset, yoffset = Mouse.get_position()
+    #Move the mouse away
+    win32api.SetCursorPos((xoffset - 50, yoffset - 50))
+    board = Board(xoffset, yoffset, depth=args.depth, processes=args.processes)
+    print("The starting grid appears to be:")
+    board.print_grid()
 
-#Move the mouse away
-win32api.SetCursorPos((xoffset - 50, yoffset - 50))
-board = Board(xoffset, yoffset)
-print("The starting grid appears to be:")
-board.print_grid()
-
-board.play(remaining_energy, depth=args.depth)
+    board.play(remaining_energy, depth=args.depth)
