@@ -6,6 +6,8 @@ import sys
 import logging
 import time
 import random
+from multiprocessing import Process, JoinableQueue, Pool
+
 
 from PIL import ImageGrab
 
@@ -89,6 +91,17 @@ class GridItemType:
 
     def __eq__(self, other):
         return self.index == other.index
+
+
+def process_move_multiprocess(move_queue, result_queue, depth, board):
+    while not move_queue.empty():
+        move = move_queue.get()
+        newboard = copy.copy(board)
+        newboard.copy_grid()
+        newboard.swap(move)
+        move.points, move.submove = newboard.simulate(depth)
+        result_queue.put(move)
+        move_queue.task_done()
 
 
 class Grid:
@@ -229,7 +242,7 @@ class Grid:
     def print_grid(self):
         print(self.describe_grid())
 
-    def best_move(self, depth=2):
+    def best_move(self, depth=2, thread=False):
         """
         Find the best move.
         depth: How many moves deep to simulate.
@@ -262,19 +275,41 @@ class Grid:
         # Shuffle the moves so we don't favor some specific order.
         random.shuffle(possible_moves)
 
-        for move in possible_moves:
-            # Skip this move if it's identical color to identical color.
-            if self.grid[move.x1][move.y1] == self.grid[move.x2][move.y2]:
-                continue
-            if Grid.debug:
-                logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
-            newboard = copy.copy(self)
-            newboard.copy_grid()
-            newboard.swap(move)
-            points, submove = newboard.simulate(depth)
-            move.points = points
-            move.submove = submove
+        if thread:
+            # Spin up threads to calculate the submoves.
+            logging.info("Launching 4 threads...")
+            move_queue = JoinableQueue()
+            result_queue = JoinableQueue()
+            for move in possible_moves:
+                move_queue.put(move)
+            #Spin up threads to process the queue.
+            pool = []
+            for i in range(4):
+                worker = Process(target=process_move_multiprocess, args=(move_queue, result_queue, depth, self,))
+                pool.append(worker)
+                worker.start()
+            #for worker in pool:
+            #    worker.join()
+            move_queue.join()
+            possible_moves = []
+            while not result_queue.empty():
+                move = result_queue.get()
+                possible_moves.append(move)
+                result_queue.task_done()
+        else:
+            for move in possible_moves:
+                # Skip this move if it's identical color to identical color.
+                if self.grid[move.x1][move.y1] == self.grid[move.x2][move.y2]:
+                    continue
+                if Grid.debug:
+                    logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
+                newboard = copy.copy(self)
+                newboard.copy_grid()
+                newboard.swap(move)
+                move.points, move.submove = newboard.simulate(depth)
 
+        # Determine which was the best move.
+        for move in possible_moves:
             if best_move is None:
                 best_move = move
             elif move.get_total_points() > best_move.get_total_points():
@@ -445,7 +480,7 @@ class Grid:
             self.print_grid()
             sim_moves = 0
             while sim_moves < energy:
-                move = self.best_move(depth)
+                move = self.best_move(depth, thread=True)
                 #print("Best Move Sequence: {0}".format(move.describe()))
                 if move.get_total_points() == 0.0:
                     print("ERROR: Calculated move sequence gives zero points.")
@@ -485,9 +520,9 @@ class Grid:
             print("Calculating move...")
             movestartime = time.time()
             if remaining_energy < depth:
-                move = self.best_move(depth=remaining_energy)
+                move = self.best_move(depth=remaining_energy, thread=True)
             else:
-                move = self.best_move(depth)
+                move = self.best_move(depth, thread=True)
             duration = time.time() - movestartime
             print("Calculating best move took: {0:.3f}s".format(duration))
             print("Best Move Sequence: {0}".format(move.describe()))

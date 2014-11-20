@@ -46,43 +46,6 @@ class Board(Grid):
             points = 60
         return points
 
-
-parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
-parser.add_argument('--energy', '-e', type=int, default=-1, help="""
-Remaining energy. If not specified then will be prompted.
-""")
-parser.add_argument('--depth', type=int, default=2, help="""
-How many moves deep to predict. Defaults to 2.
-Warning: potentially 40^depth moves have to be tested. Increasing this
-exponentially increases processing time.
-""")
-parser.add_argument('--delay', type=float, default=1.0, help="""
-How many seconds to wait after clicking. Default is 1.0.
-For slow connections or computers, increase this value.
-""")
-parser.add_argument('--fast0', action='store_true', help="""
-If best move is a zero point move, perform the next submove without recalculating.
-Runs faster, but at expensive of higher average points.
-""")
-parser.add_argument('--debug', action='store_true', help="""
-Enable debug mode, a gemology.log file will be output with details on the tested moves.
-""")
-parser.add_argument('--simulate', action='store_true', help="""
-Enable simulation mode. Script will create a new random board and simulate best moves and results.
-""")
-parser.add_argument('--calibrate', action='store_true', help="""
-Enable calibration mode. Given a mouse position, outputs color grid.
-""")
-args = parser.parse_args()
-
-if args.debug:
-    print("Enabling debug mode.")
-    Grid.debug = True
-
-if args.fast0:
-    Grid.fast0 = True
-
-Grid.delay = args.delay
 Grid.GridItemTypes = [
     GridItemType('Red', Color(172, 30, 25, 0)),
     GridItemType('Green', Color(54, 116, 37, 0)),
@@ -91,33 +54,72 @@ Grid.GridItemTypes = [
     GridItemType('Yellow', Color(182, 129, 40, 0))
 ]
 
-if args.calibrate:
-    calibrate_colors()
-    sys.exit(0)
+if __name__ == '__main__':
 
-if args.simulate:
-    board = Board(0, 0, [[None]*5]*5)
-    if args.energy < 1:
-        board.simulate_play(args.depth)
+    parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
+    parser.add_argument('--energy', '-e', type=int, default=-1, help="""
+    Remaining energy. If not specified then will be prompted.
+    """)
+    parser.add_argument('--depth', type=int, default=2, help="""
+    How many moves deep to predict. Defaults to 2.
+    Warning: potentially 40^depth moves have to be tested. Increasing this
+    exponentially increases processing time.
+    """)
+    parser.add_argument('--delay', type=float, default=1.0, help="""
+    How many seconds to wait after clicking. Default is 1.0.
+    For slow connections or computers, increase this value.
+    """)
+    parser.add_argument('--fast0', action='store_true', help="""
+    If best move is a zero point move, perform the next submove without recalculating.
+    Runs faster, but at expensive of higher average points.
+    """)
+    parser.add_argument('--debug', action='store_true', help="""
+    Enable debug mode, a gemology.log file will be output with details on the tested moves.
+    """)
+    parser.add_argument('--simulate', action='store_true', help="""
+    Enable simulation mode. Script will create a new random board and simulate best moves and results.
+    """)
+    parser.add_argument('--calibrate', action='store_true', help="""
+    Enable calibration mode. Given a mouse position, outputs color grid.
+    """)
+    args = parser.parse_args()
+
+    if args.debug:
+        print("Enabling debug mode.")
+        Grid.debug = True
+
+    if args.fast0:
+        Grid.fast0 = True
+
+    Grid.delay = args.delay
+
+    if args.calibrate:
+        calibrate_colors()
+        sys.exit(0)
+
+    if args.simulate:
+        board = Board(0, 0, [[None]*5]*5)
+        if args.energy < 1:
+            board.simulate_play(args.depth)
+        else:
+            board.simulate_play(args.depth, args.energy)
+
+
+    loglevel = logging.INFO
+    if args.debug:
+        loglevel = logging.DEBUG
+    logging.basicConfig(filename='gemology.log', level=loglevel)
+
+    if args.energy > 0:
+        remaining_energy = args.energy
     else:
-        board.simulate_play(args.depth, args.energy)
+        remaining_energy = int(input("How much gemology energy remain: "))
 
+    var = input("Place mouse over top left gem and press enter.")
+    xoffset, yoffset = Mouse.get_position()
 
-loglevel = logging.INFO
-if args.debug:
-    loglevel = logging.DEBUG
-logging.basicConfig(filename='gemology.log', level=loglevel)
-    
-if args.energy > 0:
-    remaining_energy = args.energy
-else:
-    remaining_energy = int(input("How much gemology energy remain: "))
+    board = Board(xoffset, yoffset)
+    print("The starting grid appears to be:")
+    board.print_grid()
 
-var = input("Place mouse over top left gem and press enter.")
-xoffset, yoffset = Mouse.get_position()
-
-board = Board(xoffset, yoffset)
-print("The starting grid appears to be:")
-board.print_grid()
-
-board.play(remaining_energy, depth=args.depth)
+    board.play(remaining_energy, depth=args.depth)
