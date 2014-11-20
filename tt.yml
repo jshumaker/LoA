@@ -1,9 +1,9 @@
 teams:
     moo:
         - Shep
-        - Kirya
-        - Corn
         - Tiver
+        - Corn
+        - Kirya
         - Xyern
     Legendary:
         - Serra
@@ -23,6 +23,30 @@ teams:
         - DeViL
         - Milpol
         - ActTheFool
+    Revolt:
+        - Dream
+        - Dnomyar
+        - ssone
+        - HOALINH
+        - Dowik
+    Afterlife:
+        - Mars_Demo
+        - Hero
+        - Manapause
+        - Vhal
+        - JackNg
+    VintageAlpha:
+        - Zalaxa
+        - Submissive
+        - Theresa
+        - Synti
+        - Zyna
+    QTeam:
+        - Quieara
+        - Obiwoncanoli
+        - Melky
+        - Sir_Lancelot
+        - Sylver
 players:
     Tiver:
         # Legendary
@@ -38,11 +62,38 @@ players:
         Alexxandria: false
         Morrigan: true
         # CryMeARiver
-        JayS8980: false
+        JayS8980: true
         Izzeren: false
         DeViL: true
         Milpol: false
         ActTheFool: true
+        # Revolt
+        Dnomyar: false
+        Dream: true
+        ssone: true
+        Dowik: true
+        HOALINH: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: true
+        JackNg: true
+        Manapause: true
+        # VintageAlpha
+        Zalaxa: false
+        Zyna: true
+        Synti: true
+        Submissive: true
+        Theresa: true
+        # QTeam
+        Quieara: false
+        Sylver: false
+        Sir_Lancelot: true
+        Obiwoncanoli: true 
+        Melky: true
+        # Misc
+        EyeCandy: false
+        Hoke: true
     Xyern:
         # Legendary
         icebow: false
@@ -62,6 +113,30 @@ players:
         DeViL: true
         Milpol: true
         ActTheFool: true
+        # Revolt
+        Dnomyar: false
+        Dream: true
+        ssone: true
+        Dowik: true
+        HOALINH: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: true
+        Vhal: true
+        JackNg: true
+        Manapause: true
+        # VintageAlpha
+        Zalaxa: false
+        Zyna: true
+        Synti: true
+        Submissive: true
+        Theresa: true
+        # QTeam
+        Quieara: false
+        Sylver: true
+        Sir_Lancelot: true
+        Obiwoncanoli: true 
+        Melky: true
     Shep:
         # Legendary
         icebow: false
@@ -81,6 +156,30 @@ players:
         DeViL: true
         Milpol: true
         ActTheFool: true
+        # Revolt
+        Dnomyar: false
+        Dream: true
+        ssone: true
+        Dowik: true
+        HOALINH: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: true
+        JackNg: true
+        Manapause: true
+        # VintageAlpha
+        Zalaxa: false
+        Zyna: false
+        Synti: true
+        Submissive: true
+        Theresa: true
+        # QTeam
+        Quieara: false
+        Sylver: false
+        Sir_Lancelot: true
+        Obiwoncanoli: true 
+        Melky: true
     Kirya:
         # Legendary
         icebow: false
@@ -100,6 +199,30 @@ players:
         DeViL: true
         Milpol: false
         ActTheFool: true
+        # Revolt
+        Dnomyar: false
+        Dream: false
+        ssone: false
+        Dowik: true
+        HOALINH: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: false
+        JackNg: false
+        Manapause: true
+        # VintageAlpha
+        Zalaxa: false
+        Zyna: false
+        Synti: false
+        Submissive: true
+        Theresa: true
+        # QTeam
+        Quieara: false
+        Sylver: false
+        Sir_Lancelot: false
+        Obiwoncanoli: true 
+        Melky: true
     Corn:
         # Legendary
         icebow: false
@@ -119,3 +242,27 @@ players:
         DeViL: true
         Milpol: false
         ActTheFool: true
+        # Revolt
+        Dnomyar: false
+        Dream: false
+        ssone: false
+        Dowik: true
+        HOALINH: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: false
+        JackNg: false
+        Manapause: false
+        # VintageAlpha
+        Zalaxa: false
+        Zyna: false
+        Synti: false
+        Submissive: false
+        Theresa: false
+        # QTeam
+        Quieara: false
+        Sylver: false
+        Sir_Lancelot: false
+        Obiwoncanoli: false 
+        Melky: false
