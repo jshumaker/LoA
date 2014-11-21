@@ -400,12 +400,17 @@ class TarotCards:
                 card_corner = Image.open("tarot/back8.png")
             # Adjust card positions.
             screengrab = ImageGrab.grab()
+            timeout = time.time() + 10.0
             for i in range(len(card_positions[self.level])):
                 logging.debug("Calibrating card {0}".format(i))
-                searchx, searchy = card_positions[self.level][i]
-                searchx += self.xoffset - 6
-                searchy += self.yoffset - 6
-                newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
+                while True:
+                    searchx, searchy = card_positions[self.level][i]
+                    searchx += self.xoffset - 6
+                    searchy += self.yoffset - 6
+                    newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
+                    if time.time() > timeout or newx != -1:
+                        break
+                    
                 if newx == -1:
                     logging.warning("Failed to calibrate card position {0}".format(i))
                 else:
