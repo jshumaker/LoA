@@ -121,18 +121,13 @@ class Grid:
             griditem, best_accuracy = guess_grid_item(get_avg_pixel(screengrab, xoffset, yoffset))
             best_x = xoffset
             best_y = yoffset
-            search_r = 15
-            positions = list(itertools.product(
-                range(xoffset - search_r, xoffset + search_r),
-                range(yoffset - search_r, yoffset + search_r))
-            )
-            for posx, posy in positions:
+            for posx, posy in search_offset(radius=15, offsetx=xoffset, offsety=yoffset):
                 griditem, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
                 if accuracy > best_accuracy:
                     best_accuracy = accuracy
                     best_x = posx
                     best_y = posy
-                if best_accuracy > 0.90:
+                if best_accuracy > 0.92:
                     break
 
             xoffset = best_x
@@ -164,46 +159,39 @@ class Grid:
         self.grid = newgrid
 
     def update(self, compareprevious=False):
-        timeout = time.time() + 10.0
-        while True:
-            screengrab = ImageGrab.grab()
-            lowest_accuracy = 1.00
-            newgrid = []
-            item_changed = False
-            for x in range(5):
-                column = []
-                for y in range(5):
-                    posx = self.xoffset + (x * 50)
-                    posy = self.yoffset + (y * 50)
-                    #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
-                    griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
-                    #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
-                    column.append(griditemtype)
-                    if accuracy < lowest_accuracy:
-                        lowest_accuracy = accuracy
-                    if compareprevious and griditemtype != self.grid[x][y]:
-                        item_changed = True
-                newgrid.append(column)
+        screengrab = ImageGrab.grab()
+        lowest_accuracy = 1.00
+        newgrid = []
+        item_changed = False
+        for x in range(5):
+            column = []
+            for y in range(5):
+                posx = self.xoffset + (x * 50)
+                posy = self.yoffset + (y * 50)
+                #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
+                griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
+                #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
+                column.append(griditemtype)
+                if accuracy < lowest_accuracy:
+                    lowest_accuracy = accuracy
+                if compareprevious and griditemtype != self.grid[x][y]:
+                    item_changed = True
+            newgrid.append(column)
 
-            if lowest_accuracy < 0.60:
-                #print("WARNING: Lowest accuracy was {0:02.1f}%".format(lowest_accuracy * 100.0))
-                return False
-            if compareprevious and not item_changed:
-                print("Warning, grid did not change.")
-            oldgrid = self.grid
-            self.grid = newgrid
+        if lowest_accuracy < 0.60:
+            return False
+        if compareprevious and not item_changed:
+            print("WARNING: grid did not change.")
+        oldgrid = self.grid
+        self.grid = newgrid
 
-            # Make sure the game didn't enter some bad state.
-            self.clear()
-            if self.drop() > 0:
-                if time.time() > timeout:
-                    print("ERROR: Grid state is bad. Please exit and re-enter the minigame and try again.")
-                    sys.exit(1)
-                print("WARNING: The updated grid contains gems that should have cleared. Waiting 1 second to retry.")
-                self.grid = oldgrid
-                time.sleep(1.0)
-            else:
-                break
+        # Make sure the game didn't enter some bad state.
+        self.clear()
+        if self.drop() > 0:
+            print("WARNING: The updated grid contains gems that should have cleared.")
+            self.grid = oldgrid
+            return False
+
         return True
 
     def describe_grid_large(self):
