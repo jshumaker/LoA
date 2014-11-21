@@ -6,8 +6,8 @@ import sys
 import logging
 import time
 import random
-from multiprocessing import Process, JoinableQueue, Pool
-
+from multiprocessing import Pool, cpu_count
+import signal
 
 from PIL import ImageGrab
 
@@ -93,17 +93,6 @@ class GridItemType:
         return self.index == other.index
 
 
-def process_move_multiprocess(move_queue, result_queue, depth, board):
-    while not move_queue.empty():
-        move = move_queue.get()
-        newboard = copy.copy(board)
-        newboard.copy_grid()
-        newboard.swap(move)
-        move.points, move.submove = newboard.simulate(depth)
-        result_queue.put(move)
-        move_queue.task_done()
-
-
 class Grid:
     """
     Abstraction of the 5x5 board grid applicable to both Gemology and Dragon Souls
@@ -115,8 +104,14 @@ class Grid:
     # Special type for unknown grid items.
     GridItemTypeUnknown = GridItemType('Unknown', None)
 
-    def __init__(self, xoffset, yoffset, grid=None):
+    def __init__(self, xoffset, yoffset, grid=None, depth=3, processes=-1):
         self.cleared = None
+        self.depth = depth
+        if processes == -1:
+            self.processes = cpu_count()
+        else:
+            self.processes = processes
+
         if grid is None:
             screengrab = ImageGrab.grab()
 
@@ -242,6 +237,14 @@ class Grid:
     def print_grid(self):
         print(self.describe_grid())
 
+    def process_move_multiprocess(self, move):
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        newboard = copy.copy(self)
+        newboard.copy_grid()
+        newboard.swap(move)
+        move.points, move.submove = newboard.simulate(self.depth)
+        return move
+
     def best_move(self, depth=2, thread=False):
         """
         Find the best move.
@@ -269,38 +272,27 @@ class Grid:
             # Swap down
             possible_moves.append(Move(x, y, self.grid[x][y], x, y+1, self.grid[x][y+1]))
 
-        # Shuffle the moves so we don't favor some specific order.
-        random.shuffle(possible_moves)
+        # Strip useless moves. We only want moves where the 2 items to swap are not equal.
+        possible_moves = [move for move in possible_moves if self.grid[move.x1][move.y1] != self.grid[move.x2][move.y2]]
 
         # Shuffle the moves so we don't favor some specific order.
         random.shuffle(possible_moves)
 
-        if thread:
+        if thread and self.processes > 1:
             # Spin up threads to calculate the submoves.
             logging.info("Launching 4 threads...")
-            move_queue = JoinableQueue()
-            result_queue = JoinableQueue()
-            for move in possible_moves:
-                move_queue.put(move)
-            #Spin up threads to process the queue.
-            pool = []
-            for i in range(4):
-                worker = Process(target=process_move_multiprocess, args=(move_queue, result_queue, depth, self,))
-                pool.append(worker)
-                worker.start()
-            #for worker in pool:
-            #    worker.join()
-            move_queue.join()
-            possible_moves = []
-            while not result_queue.empty():
-                move = result_queue.get()
-                possible_moves.append(move)
-                result_queue.task_done()
+            try:
+                pool = Pool(processes=self.processes)
+                result = pool.map_async(self.process_move_multiprocess, possible_moves)
+                while not result.ready():
+                    time.sleep(0.010)
+                possible_moves = result.get()
+                pool.close()
+            except KeyboardInterrupt:
+                pool.terminate()
+                sys.exit(1)
         else:
             for move in possible_moves:
-                # Skip this move if it's identical color to identical color.
-                if self.grid[move.x1][move.y1] == self.grid[move.x2][move.y2]:
-                    continue
                 if Grid.debug:
                     logging.debug("Depth: {0} Testing move: {1}".format(depth, move.describe()))
                 newboard = copy.copy(self)

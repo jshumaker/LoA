@@ -14,6 +14,9 @@ import operator
 import time
 
 parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards.')
+parser.add_argument('--attempts', '-a', type=int, default=1, help="""
+How many attempts to do. Only continues upon a successful lvl 10 completion. Defaults to 1.
+""")
 parser.add_argument('--skipstart', '-n', action='store_true', help="""
 Broken currently.
 Skip the start/next button click at the beginning, use when having script continue a level that is in-progress.
@@ -551,5 +554,9 @@ if args.skipstart:
     logging.error("Skipping the start is unfortunately unsupported at this time.")
     sys.exit(1)
 
-tarot.play(args.skipstart)
+for i in range(args.attempts):
+    tarot.play(args.skipstart)
+    args.skipstart = False
+    tarot.level = 0
+    time.sleep(1.0)
 

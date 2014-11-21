@@ -60,8 +60,11 @@ if __name__ == '__main__':
     parser.add_argument('--energy', '-e', type=int, default=-1, help="""
     Remaining energy. If not specified then will be prompted.
     """)
-    parser.add_argument('--depth', type=int, default=2, help="""
-    How many moves deep to predict. Defaults to 2.
+    parser.add_argument('--processes', '-p', type=int, default=-1, help="""
+    How many processes to spin up for multiprocessing. Defaults to cpu count.
+    """)
+    parser.add_argument('--depth', type=int, default=3, help="""
+    How many moves deep to predict. Defaults to 3.
     Warning: potentially 40^depth moves have to be tested. Increasing this
     exponentially increases processing time.
     """)
@@ -98,12 +101,11 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.simulate:
-        board = Board(0, 0, [[None]*5]*5)
+        board = Board(0, 0, [[None]*5]*5, depth=args.depth, processes=args.processes)
         if args.energy < 1:
             board.simulate_play(args.depth)
         else:
             board.simulate_play(args.depth, args.energy)
-
 
     loglevel = logging.INFO
     if args.debug:
@@ -118,7 +120,7 @@ if __name__ == '__main__':
     var = input("Place mouse over top left gem and press enter.")
     xoffset, yoffset = Mouse.get_position()
 
-    board = Board(xoffset, yoffset)
+    board = Board(xoffset, yoffset, depth=args.depth, processes=args.processes)
     print("The starting grid appears to be:")
     board.print_grid()
 
