@@ -410,7 +410,10 @@ class TarotCards:
                     newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
                     if time.time() > timeout or newx != -1:
                         break
-                    
+                    if newx == -1:
+                        # Update our screengrab.
+                        screengrab = ImageGrab.grab()
+
                 if newx == -1:
                     logging.warning("Failed to calibrate card position {0}".format(i))
                 else:
