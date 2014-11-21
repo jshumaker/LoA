@@ -408,7 +408,8 @@ class TarotCards:
                 newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
                 if newx == -1:
                     logging.warning("Failed to calibrate card position {0}".format(i))
-                card_positions[self.level][i] = (newx + 6 - self.xoffset, newy + 6 - self.yoffset)
+                else:
+                    card_positions[self.level][i] = (newx + 6 - self.xoffset, newy + 6 - self.yoffset)
                 logging.debug("Card {0} offset: {1},{2}".format(i, newx - searchx, newy - searchy))
         else:
             # Game has already started.
