@@ -107,6 +107,7 @@ class Grid:
     def __init__(self, xoffset, yoffset, grid=None, depth=3, processes=-1):
         self.cleared = None
         self.depth = depth
+        self.grid = None
         if processes == -1:
             self.processes = cpu_count()
         else:
@@ -163,37 +164,46 @@ class Grid:
         self.grid = newgrid
 
     def update(self, compareprevious=False):
-        screengrab = ImageGrab.grab()
-        lowest_accuracy = 1.00
-        newgrid = []
-        item_changed = False
-        for x in range(5):
-            column = []
-            for y in range(5):
-                posx = self.xoffset + (x * 50)
-                posy = self.yoffset + (y * 50)
-                #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
-                griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
-                #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
-                column.append(griditemtype)
-                if accuracy < lowest_accuracy:
-                    lowest_accuracy = accuracy
-                if compareprevious and griditemtype != self.grid[x][y]:
-                    item_changed = True
-            newgrid.append(column)
+        timeout = time.time() + 10.0
+        while True:
+            screengrab = ImageGrab.grab()
+            lowest_accuracy = 1.00
+            newgrid = []
+            item_changed = False
+            for x in range(5):
+                column = []
+                for y in range(5):
+                    posx = self.xoffset + (x * 50)
+                    posy = self.yoffset + (y * 50)
+                    #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
+                    griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
+                    #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
+                    column.append(griditemtype)
+                    if accuracy < lowest_accuracy:
+                        lowest_accuracy = accuracy
+                    if compareprevious and griditemtype != self.grid[x][y]:
+                        item_changed = True
+                newgrid.append(column)
 
-        if lowest_accuracy < 0.60:
-            #print("WARNING: Lowest accuracy was {0:02.1f}%".format(lowest_accuracy * 100.0))
-            return False
-        if compareprevious and not item_changed:
-            print("Warning, grid did not change.")
-        self.grid = newgrid
+            if lowest_accuracy < 0.60:
+                #print("WARNING: Lowest accuracy was {0:02.1f}%".format(lowest_accuracy * 100.0))
+                return False
+            if compareprevious and not item_changed:
+                print("Warning, grid did not change.")
+            oldgrid = self.grid
+            self.grid = newgrid
 
-        # Make sure the game didn't enter some bad state.
-        self.clear()
-        if self.drop() > 0:
-            print("ERROR: The updated grid contains gems that should have cleared.")
-            sys.exit(1)
+            # Make sure the game didn't enter some bad state.
+            self.clear()
+            if self.drop() > 0:
+                if time.time() > timeout:
+                    print("ERROR: Grid state is bad. Please exit and re-enter the minigame and try again.")
+                    sys.exit(1)
+                print("WARNING: The updated grid contains gems that should have cleared. Waiting 1 second to retry.")
+                self.grid = oldgrid
+                time.sleep(1.0)
+            else:
+                break
         return True
 
     def describe_grid_large(self):
