@@ -107,11 +107,12 @@ for i in range(1, args.attempts + 1):
         digit_total = 0
         screengrab = ImageGrab.grab()
         for pos in digit_positions:
-            name, x, y = detect_image(screengrab, digits, *pos, radius=10)
+            name, x, y = detect_image(screengrab, digits, *pos, radius=5)
             if name is None:
                 logging.debug("Failed to recognize digit, retrying in 100ms.")
                 time.sleep(0.100)
                 failure = True
+                break
             logging.debug("Recognized digit: {0} Offset: {1}, {2}".format(name, x - pos[0], y - pos[1]))
             digit_total += int(name)
         if not failure:
