@@ -13,9 +13,9 @@ import math
 import operator
 import time
 
-parser = argparse.ArgumentParser(description='Automatically spend elemental stones.')
+parser = argparse.ArgumentParser(description='Automatically spend elemental stones.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--attempts', '-a', type=int, default=1, help="""
-How many upgrade attempts to do. Defaults to %default%.
+How many upgrade attempts to do.
 """)
 parser.add_argument('--debug', action='store_true', help="""
 Enable debug mode, a element.log file will be output with extra details.
