@@ -127,7 +127,7 @@ class Grid:
                     best_accuracy = accuracy
                     best_x = posx
                     best_y = posy
-                if best_accuracy > 0.95:
+                if best_accuracy > 0.99:
                     break
 
             xoffset = best_x
