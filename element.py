@@ -53,12 +53,15 @@ game_center = (int((game_window[2] - game_window[0]) / 2) + game_window[0],
 # Give the game focus.
 safe_click_pos = (max(0, game_window[0] - 1), max(0, game_window[1]))
 Mouse.click(*safe_click_pos)
-
+time.sleep(0.200)
 
 expected_x = game_center[0] + upgrade_offset[0]
 expected_y = game_center[1] + upgrade_offset[1]
 # Calibrate upgrade_image offset.
-upgrade_pos = image_search(ImageGrab.grab(), upgrade_image, expected_x, expected_y)
+upgrade_pos = image_search(ImageGrab.grab(), upgrade_image, expected_x, expected_y, radius=10)
+if upgrade_pos[0] == -1:
+    logging.error("Failed to find upgrade button, expected it to be near {0}, {1}".format(expected_x, expected_y))
+    sys.exit(1)
 
 logging.debug("Upgrade button found at: {0}, offset: {1},{2}".format(
     upgrade_pos, expected_x - upgrade_pos[0], expected_y - upgrade_pos[1]))
