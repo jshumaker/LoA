@@ -11,8 +11,20 @@ teams:
         - Lilliana
         - Knut
         - Limitless
+    TeamName:
+        - Salem
+        - rumba
+        - kamy5
+        - Jacquelyn
+        - Lezard
 players:
     Tiver:
+        # TeamName
+        Salem: false
+        rumba: true
+        kamy5: true
+        Jacquelyn: true
+        Lezard: false
         # bluewaffle
         Ninja_Mage: true
         Trinty: true
@@ -65,6 +77,12 @@ players:
         EyeCandy: false
         Hoke: true
     Xyern:
+        # TeamName
+        Salem: true
+        rumba: true
+        kamy5: true
+        Jacquelyn: true
+        Lezard: false
         # bluewaffle
         Ninja_Mage: true
         Trinty: true
@@ -114,6 +132,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Shep:
+        # TeamName
+        Salem: true
+        rumba: true
+        kamy5: true
+        Jacquelyn: true
+        Lezard: true
         # bluewaffle
         Ninja_Mage: true
         Trinty: true
@@ -163,6 +187,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Kirya:
+        # TeamName
+        Salem: false
+        rumba: true
+        kamy5: true
+        Jacquelyn: true
+        Lezard: false
         # bluewaffle
         Ninja_Mage: false
         Trinty: false
@@ -212,6 +242,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Corn:
+        # TeamName
+        Salem: false
+        rumba: true
+        kamy5: true
+        Jacquelyn: true
+        Lezard: false
         # bluewaffle
         Ninja_Mage: false
         Trinty: false
