@@ -127,7 +127,7 @@ class Grid:
                     best_accuracy = accuracy
                     best_x = posx
                     best_y = posy
-                if best_accuracy > 0.92:
+                if best_accuracy > 0.99:
                     break
 
             xoffset = best_x
@@ -277,6 +277,8 @@ class Grid:
         random.shuffle(possible_moves)
 
         if thread and self.processes > 1:
+            # Let the other processes know what depth to start at.
+            self.depth = depth
             # Spin up threads to calculate the submoves.
             logging.info("Launching 4 threads...")
             try:
