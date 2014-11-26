@@ -1,54 +1,24 @@
 teams:
     moo:
-        - Shep
-        - Tiver
         - Corn
         - Kirya
+        - Shep
+        - Tiver
         - Xyern
-    Legendary:
-        - Serra
-        - Bhella
-        - Draconic
-        - Sepiroth
-        - icebow
-    PikachuSquad:
-        - Alexxandria
-        - Levita
-        - GOLDMOON
-        - Kyosuke
-        - Morrigan
-    CryMeARiver:
-        - JayS8980
-        - Izzeren
-        - DeViL
-        - Milpol
-        - ActTheFool
-    Revolt:
-        - Dream
-        - Dnomyar
-        - ssone
-        - HOALINH
-        - Dowik
-    Afterlife:
-        - Mars_Demo
-        - Hero
-        - Manapause
-        - Vhal
-        - JackNg
-    VintageAlpha:
-        - Zalaxa
-        - Submissive
-        - Theresa
-        - Synti
-        - Zyna
-    QTeam:
-        - Quieara
-        - Obiwoncanoli
-        - Melky
-        - Sir_Lancelot
-        - Sylver
+    bluewaffle:
+        - Ninja_Mage
+        - Trinty
+        - Lilliana
+        - Knut
+        - Limitless
 players:
     Tiver:
+        # bluewaffle
+        Ninja_Mage: true
+        Trinty: true
+        Lilliana: true
+        Knut: false
+        Limitless: true
         # Legendary
         icebow: false
         Sepiroth: false
@@ -95,6 +65,12 @@ players:
         EyeCandy: false
         Hoke: true
     Xyern:
+        # bluewaffle
+        Ninja_Mage: true
+        Trinty: true
+        Lilliana: true
+        Knut: false
+        Limitless: true
         # Legendary
         icebow: false
         Sepiroth: true
@@ -138,6 +114,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Shep:
+        # bluewaffle
+        Ninja_Mage: true
+        Trinty: true
+        Lilliana: true
+        Knut: true
+        Limitless: true
         # Legendary
         icebow: false
         Sepiroth: true
@@ -181,6 +163,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Kirya:
+        # bluewaffle
+        Ninja_Mage: false
+        Trinty: false
+        Lilliana: false
+        Knut: false
+        Limitless: false
         # Legendary
         icebow: false
         Sepiroth: false
@@ -224,6 +212,12 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Corn:
+        # bluewaffle
+        Ninja_Mage: false
+        Trinty: false
+        Lilliana: false
+        Knut: false
+        Limitless: false
         # Legendary
         icebow: false
         Sepiroth: false
