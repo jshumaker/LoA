@@ -94,9 +94,9 @@ def get_game_window():
         logging.error("Failed to find game window.")
         sys.exit(1)
     elif len(windows) > 1:
-        logging.warning("Found {0} possible game windows.".format(len(windows)))
+        print("Found {0} possible game windows.".format(len(windows)))
         for i in range(1, len(windows) + 1):
-            logging.info("{0}: {1}".format(i, windows[i-1][1]))
+            print("{0}: {1}".format(i, windows[i-1][1]))
         windownum = input("Enter the number for the window you which to use [1]: ")
         if windownum == "":
             windownum = 0
