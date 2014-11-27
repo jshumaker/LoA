@@ -440,7 +440,7 @@ class TarotCards:
         cards_flipped = 0
         if self.skipstart:
             # scan cards
-            logging.log(VERBOSE, "Check if level has already been started, scan if any cards can be detected.")
+            logging.log(VERBOSE, "Scanning for already flipped cards.")
             for cardnum in range(len(card_positions[self.level])):
                 self.detect_card(cardnum, dumb=True)
                 if self.cards_on_board[cardnum].name is not None:
@@ -485,7 +485,7 @@ class TarotCards:
                     logging.warning("Failed to calibrate card position {0}".format(i))
                 else:
                     card_positions[self.level][i] = (newx + 6 - self.gamecenter[0], newy + 6 - self.gamecenter[1])
-                logging.log(VERBOSE, "Card {0} offset: {1},{2}".format(i, newx - searchx, newy - searchy))
+                    logging.log(VERBOSE, "Card {0} offset: {1},{2}".format(i, newx - searchx, newy - searchy))
         else:
             # Game has already started and some cards flipped.
             matches_remaining -= int(cards_flipped / 2)
@@ -496,11 +496,6 @@ class TarotCards:
 
             if cards_flipped % 2 == 1:
                 # We're in the middle of matching cards. Try and match another card before main loop starts.
-                # Find what the last flipped card is, and unmark it as matched.
-                for card in reversed(self.cards_on_board):
-                    if card.matched:
-                        card.matched = False
-                        break
                 self.flip_card(unknownpos, detect=True)
                 # Check if this is a match
                 match = False
@@ -514,15 +509,18 @@ class TarotCards:
                 if not match:
                     # Let's wait for the cards to flip back over
                     self.wait_unflip(unknownpos)
-                    # TODO: We need to figure out what card flipped back over.
-                    # Right now we assume it was the card prior to this one.
+                    # Figure out what card flipped back over.
+                    for cardnum in range(len(card_positions[self.level])):
+                        if self.cards_on_board[cardnum].matched and self.detect_card_back(cardnum)[0] != -1:
+                            logging.log(VERBOSE, "Marking card {0} as unmatched.".format(cardnum))
+                            self.cards_on_board[cardnum].matched = False
                 unknownpos += 1
 
         self.skipstart = False
         # Click pairs to find cards, and eventually match.
         while matches_remaining > 0:
             # seek past any previously matched cards.
-            while self.cards_on_board[unknownpos].matched:
+            while self.cards_on_board[unknownpos].name is not None:
                 unknownpos += 1
             # Check if we know of any matches we can flip.
             for c1 in range(len(self.cards_on_board)):
