@@ -125,7 +125,7 @@ card_positions = [
      (-450, 198), (-343, 198), (-236, 198), (-129, 198), (-22, 198), (85, 198), (192, 198), (299, 198)],
 ]
 # Number of flips gained upon completion of a level.
-flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34]
+flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34, 40, 44, 48, 52]
 
 card_width = 70
 card_height = 123
