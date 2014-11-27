@@ -26,17 +26,14 @@ parser.add_argument('--force', action='store_true', help="""
 Play a level even if not enough flips to complete it. Additionally
 keep flipping even if we don't think we have enough flips left.
 """)
-parser.add_argument('--recognize_file', '-r', help="""
-Parse a given file, giving card values for each position and outputting png's for unrecognized cards.
-""")
-parser.add_argument('--debug', action='store_true', help="""
-Enable debug mode, a tarot.log file will be output with extra details.
-""")
 parser.add_argument('--singlelevel', '-s', action='store_true', help="""
 Only play 1 level, good for debugging.
 """)
 parser.add_argument('--guessflips', action='store_true', help="""
 Try to parse the number of flips remaining.
+""")
+parser.add_argument('--debug', action='store_true', help="""
+Send debug output to console. It is always sent to log file, so this is rarely recommended.
 """)
 args = parser.parse_args()
 
@@ -48,7 +45,7 @@ logger = logging.getLogger('')
 logger.setLevel(loglevel)
 # create file handler which logs even debug messages
 fh = logging.FileHandler('tarot.log', mode='w')
-fh.setLevel(loglevel)
+fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
@@ -65,42 +62,52 @@ logger.addHandler(ch)
 # noinspection PyPep8
 card_positions = [
     # Level 1
-    [(236, 167), (506, 167), (776, 167),
-     (236, 417), (506, 417), (776, 417)],
+    [(-307, -139), (-37, -139), (233, -139),
+     (-307, 111), (-37, 111), (233, 111)],
     # Level 2
-    [(356, 117), (656, 117),
-     (256, 297), (356, 297), (656, 297), (756, 297),
-     (356, 477), (656, 477)],
+    [(-187, -189), (113, -189),
+     (-287, -9), (-187, -9), (113, -9), (213, -9),
+     (-187, 171), (113, 171)],
     # Level 3
-    [(307, 167), (507, 167), (707, 167),
-     (207, 317), (407, 317), (607, 317), (807, 317),
-     (307, 467), (507, 467), (707, 467)],
+    [(-236, -139), (-36, -139), (164, -139),
+     (-336, 11), (-136, 11), (64, 11), (264, 11),
+     (-236, 161), (-36, 161), (164, 161)],
     # Level 4
-    [(396, 167), (506, 167), (616, 167),
-     (66, 297), (176, 297), (286, 297), (736, 297), (846, 297), (956, 297),
-     (396, 417), (506, 417), (616, 417)],
+    [(-147, -139), (-37, -139), (73, -139),
+     (-477, -9), (-367, -9), (-257, -9), (193, -9), (303, -9), (413, -9),
+     (-147, 111), (-37, 111), (73, 111)],
     # Level 5
-    [(36, 111), (116, 247), (196, 375), (276, 488), (376, 340), (462, 177),
-     (552, 177), (636, 340), (736, 488), (816, 375), (896, 247), (976, 111)],
+    [(-507, -195), (-427, -59), (-347, 69), (-267, 182), (-167, 34), (-81, -129),
+     (9, -129), (93, 34), (193, 182), (273, 69), (353, -59), (433, -195)],
     # Level 6
-    [(356, 167), (456, 167), (556, 167), (656, 167),
-     (156, 314), (256, 314), (756, 314), (856, 314),
-     (356, 417), (456, 417), (556, 417), (656, 417)],
+    [(-187, -139), (-87, -139), (13, -139), (113, -139),
+     (-387, 8), (-287, 8), (213, 8), (313, 8),
+     (-187, 111), (-87, 111), (13, 111), (113, 111)],
     # Level 7
-    [(206, 167), (306, 167), (406, 167), (506, 167), (606, 167), (706, 167), (806, 167),
-     (206, 417), (306, 417), (406, 417), (506, 417), (606, 417), (706, 417), (806, 417)],
+    [(-337, -139), (-237, -139), (-137, -139), (-37, -139), (63, -139), (163, -139), (263, -139),
+     (-337, 111), (-237, 111), (-137, 111), (-37, 111), (63, 111), (163, 111), (263, 111)],
     # Level 8
-    [(106, 117), (256, 117), (406, 117), (556, 117), (706, 117), (856, 117),
-     (106, 286), (256, 286), (406, 286), (556, 286), (706, 286), (856, 286),
-     (106, 457), (256, 457), (406, 457), (556, 457), (706, 457), (856, 457)],
+    [(-437, -189), (-287, -189), (-137, -189), (13, -189), (163, -189), (313, -189),
+     (-437, -20), (-287, -20), (-137, -20), (13, -20), (163, -20), (313, -20),
+     (-437, 151), (-287, 151), (-137, 151), (13, 151), (163, 151), (313, 151)],
     # Level 9
-    [(106, 117), (213, 117), (320, 117), (427, 117), (534, 117), (641, 117), (748, 117), (855, 117),
-     (106, 287), (213, 287), (320, 287), (427, 287), (534, 287), (641, 287), (748, 287), (855, 287),
-     (106, 457), (213, 457), (320, 457), (427, 457), (534, 457), (641, 457), (748, 457), (855, 457)],
+    [(-437, -189), (-330, -189), (-223, -189), (-116, -189), (-9, -189), (98, -189), (205, -189), (312, -189),
+     (-437, -19), (-330, -19), (-223, -19), (-116, -19), (-9, -19), (98, -19), (205, -19), (312, -19),
+     (-437, 151), (-330, 151), (-223, 151), (-116, 151), (-9, 151), (98, 151), (205, 151), (312, 151)],
     # Level 10
-    [(106, 117), (213, 117), (320, 117), (427, 117), (534, 117), (641, 117), (748, 117), (855, 117),
-     (106, 287), (213, 287), (320, 287), (427, 287), (534, 287), (641, 287), (748, 287), (855, 287),
-     (106, 457), (213, 457), (320, 457), (427, 457), (534, 457), (641, 457), (748, 457), (855, 457)],
+    [(-437, -189), (-330, -189), (-223, -189), (-116, -189), (-9, -189), (98, -189), (205, -189), (312, -189),
+     (-437, -19), (-330, -19), (-223, -19), (-116, -19), (-9, -19), (98, -19), (205, -19), (312, -19),
+     (-437, 151), (-330, 151), (-223, 151), (-116, 151), (-9, 151), (98, 151), (205, 151), (312, 151)],
+    # Level 11
+    [(-450, -282), (-343, -282), (-236, -282), (-129, -282), (-22, -282), (85, -282), (192, -282), (299, -282),
+     (-450, -122), (-343, -122), (-236, -122), (-129, -122), (-22, -122), (85, -122), (192, -122), (299, -122),
+     (-450, 38), (-343, 38), (-236, 38), (-129, 38), (-22, 38), (85, 38), (192, 38), (299, 38),
+     (-129, 198), (-22, 198)],
+    # Level 12
+    [(-450, -282), (-343, -282), (-236, -282), (-129, -282), (-22, -282), (85, -282), (192, -282), (299, -282),
+     (-450, -122), (-343, -122), (-236, -122), (-129, -122), (-22, -122), (85, -122), (192, -122), (299, -122),
+     (-450, 38), (-343, 38), (-236, 38), (-129, 38), (-22, 38), (85, 38), (192, 38), (299, 38),
+     (-236, 198), (-129, 198), (-22, 198), (85, 198)],
 ]
 # Number of flips gained upon completion of a level.
 flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34]
@@ -108,10 +115,10 @@ flips_gained = [10, 16, 18, 18, 20, 20, 24, 28, 34]
 card_width = 70
 card_height = 123
 
-flips_offsetx = 745
-flips_offsety = 20
-level_offsetx = 350
-level_offsety = 52
+flips_offsetx = 345
+flips_offsety = 52
+level_offsetx = 749
+level_offsety = 20
 digit_width = 10
 digit_height = 16
 
@@ -129,12 +136,13 @@ class CardOnBoard:
 class TarotCards:
     def __init__(self):
         self.flips_left = 0
-        self.xoffset = 0
-        self.yoffset = 0
         self.level = -1
         self.cards_on_board = None
         self.gamepos = None
         self.gamesize = None
+        self.gamecenter = None
+        self.safeclick = None
+        self.skipstart = False
 
         logging.info("Loading cards...")
         self.tarot_cards = []
@@ -157,49 +165,56 @@ class TarotCards:
             self.digits.append((name, Image.open(file)))
             logging.debug("Loaded digit: {0}".format(name))
 
+    def find_next(self):
+        # Search for next button.
+        logging.debug("Searching for next button...")
+        next_image = Image.open("tarot/next.png")
+        searchx = self.gamecenter[0] - 45
+        searchy = self.gamecenter[1] + 65
+        best_x, best_y = image_search(ImageGrab.grab(), next_image, searchx, searchy)
+        next_image.close()
+        return best_x, best_y
+
     def orient(self):
         # Get the game window
         self.gamepos = get_game_window()
         self.gamesize = (self.gamepos[2] - self.gamepos[0] + 1, self.gamepos[3] - self.gamepos[1] + 1)
         logging.debug("Game Window position: {0},{1},{2},{3}".format(*self.gamepos))
 
-        Mouse.click(self.gamepos[0] + 2, self.gamepos[1] + 2)
+        if self.gamesize[0] < 1040:
+            logging.error("Game window size is too narrow, please make game window atleast 1040 pixels wide.")
+            sys.exit(1)
 
+        self.safeclick = (max(0, self.gamepos[0] + 2), max(0, self.gamepos[1] + 2))
+        Mouse.click(*self.safeclick)
+        time.sleep(0.2)
+
+        self.gamecenter = (self.gamepos[0] + int(self.gamesize[0] / 2),
+                           self.gamepos[1] + int(self.gamesize[1] / 2))
         # Search for start button to center.
         logging.debug("Searching for start button...")
         start_image = Image.open("tarot/start.png")
-        searchx = int(self.gamepos[0] + (self.gamesize[0] / 2) - 31)
-        searchy = int(self.gamepos[1] + (self.gamesize[1] / 2) + 97)
+        searchx = self.gamecenter[0] - 31
+        searchy = self.gamecenter[1] + 97
         best_x, best_y = image_search(ImageGrab.grab(), start_image, searchx, searchy)
         start_image.close()
 
         if best_x != -1:
-            center_x = best_x + 31
-            center_y = best_y - 97
+            self.gamecenter = (best_x + 31, best_y - 96)
             self.level = 0
             logging.debug("Start button found, offset from expected: {0}, {1}".format(best_x - searchx, best_y - searchy))
         else:
-            # Search for next button.
-            logging.debug("Searching for next button...")
-            next_image = Image.open("tarot/next.png")
-            searchx = int(self.gamepos[0] + (self.gamesize[0] / 2) - 45)
-            searchy = int(self.gamepos[1] + (self.gamesize[1] / 2) + 65)
-            best_x, best_y = image_search(ImageGrab.grab(), next_image, searchx, searchy)
-            next_image.close()
+            self.level = self.parse_level() - 1
+            best_x, best_y = self.find_next()
             if best_x != -1:
-                center_x = best_x + 45
-                center_y = best_y - 70
-                self.level = self.parse_level() - 1
+                self.gamecenter = (best_x + 45, best_y - 68)
                 logging.debug("Next button found, offset from expected: {0}, {1}".format(best_x - searchx, best_y - searchy))
             else:
-                logging.error("Failed to find origin!")
-                sys.exit(1)
+                logging.warning("Level appears to already be started.")
+                self.skipstart = True
 
-        logging.info("Center found at {0},{1}".format(center_x, center_y))
+        logging.info("Center found at {0}".format(self.gamecenter))
         logging.info("Starting play at level {0}".format(self.level + 1))
-
-        self.xoffset = center_x - 543
-        self.yoffset = center_y - 306
 
         # Let's calibrate this with the first card which is never really covered. Requires first card to be unflipped.
         if self.level < 3:
@@ -214,21 +229,18 @@ class TarotCards:
         screengrab = ImageGrab.grab()
         logging.debug("Calibrating via card 0")
         searchx, searchy = card_positions[self.level][0]
-        searchx += self.xoffset - 6
-        searchy += self.yoffset - 6
+        searchx += self.gamecenter[0] - 6
+        searchy += self.gamecenter[1] - 6
         newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=20)
         if newx == -1:
             logging.error("Failed to calibrate")
             sys.exit(1)
         logging.info("Card offset: {0},{1}".format(newx - searchx, newy - searchy))
-        self.xoffset += newx - searchx
-        self.yoffset += newx - searchx
+        self.gamecenter = (self.gamecenter[0] + newx - searchx,
+                           self.gamecenter[1] + newy - searchy)
         card_corner.close()
 
-        logging.info("Origin at {0},{1}".format(self.xoffset, self.yoffset))
-        Mouse.click(self.xoffset, self.yoffset)
-
-        time.sleep(0.2)
+        logging.info("Center adjusted to {0}".format(self.gamecenter))
 
     def match_digit(self, i1):
         # This works as the threshold a match must be under to be reliable.
@@ -302,8 +314,8 @@ class TarotCards:
         if self.flips_left <= 0:
             logging.error("No flips remaining!")
             sys.exit(1)
-        cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
-                   self.yoffset + card_positions[self.level][cardnum][1] + 15)
+        cardpos = (self.gamecenter[0] + card_positions[self.level][cardnum][0] + int(card_width / 2),
+                   self.gamecenter[1] + card_positions[self.level][cardnum][1] + 15)
         logging.debug("Flipping level {0} card {1} at position {2}".format(self.level, cardnum, cardpos))
         cursor = Mouse.get_cursor(cardpos)
         logging.debug("Pre-flip, cursor is: {0}".format(cursor))
@@ -318,6 +330,9 @@ class TarotCards:
             if Mouse.cursor_is_arrow(cardpos):
                 if detect:
                     if self.detect_card(cardnum):
+                        break
+                    if self.find_next()[0] != -1:
+                        logging.debug("Next button is up, the level finished.")
                         break
                     if time.time() > timeout:
                         logging.error("Failed to detect card {0} level {1}".format(cardnum, self.level))
@@ -340,8 +355,8 @@ class TarotCards:
             retry_max = 30
         while retries < retry_max:
             retries += 1
-            searchx = self.xoffset + card_positions[self.level][cardnum][0]
-            searchy = self.yoffset + card_positions[self.level][cardnum][1]
+            searchx = self.gamecenter[0] + card_positions[self.level][cardnum][0]
+            searchy = self.gamecenter[1] + card_positions[self.level][cardnum][1]
             card_name, x, y = detect_image(ImageGrab.grab(),
                                            self.tarot_cards,
                                            searchx,
@@ -355,15 +370,15 @@ class TarotCards:
         return False
 
     def wait_unflip(self, cardnum):
-        cardpos = (self.xoffset + card_positions[self.level][cardnum][0] + int(card_width / 2),
-                   self.yoffset + card_positions[self.level][cardnum][1] + 15)
+        cardpos = (self.gamecenter[0] + card_positions[self.level][cardnum][0] + int(card_width / 2),
+                   self.gamecenter[1] + card_positions[self.level][cardnum][1] + 15)
         while True:
             Mouse.move(*cardpos)
             if Mouse.cursor_is_hand():
                 break
             time.sleep(0.100)
 
-    def play_level(self, skip_start=False):
+    def play_level(self):
         logging.info("Playing level {0}".format(self.level + 1))
         self.cards_on_board = []
         for i in range(len(card_positions[self.level])):
@@ -371,20 +386,20 @@ class TarotCards:
 
         # Check if game has already started
         cards_flipped = 0
-        #for cardnum in range(len(card_positions[self.level])):
-        #    logging.debug("Check if level has already been started, scan if any cards can be detected.")
-        #    self.detect_card(cardnum, dumb=True)
-        #    if self.cards_on_board[cardnum].name is not None:
-        #        self.cards_on_board[cardnum].matched = True
-        #        cards_flipped += 1
+        for cardnum in range(len(card_positions[self.level])):
+            logging.debug("Check if level has already been started, scan if any cards can be detected.")
+            self.detect_card(cardnum, dumb=True)
+            if self.cards_on_board[cardnum].name is not None:
+                self.cards_on_board[cardnum].matched = True
+                cards_flipped += 1
 
         unknownpos = 0
         matches_remaining = len(card_positions[self.level]) / 2
         if cards_flipped == 0:
-            if not skip_start:
+            if not self.skipstart:
                 # Click start.
-                start_pos = (545 + self.xoffset, 415 + self.yoffset)
-                next_pos = (540 + self.xoffset, 380 + self.yoffset)
+                start_pos = (self.gamecenter[0], 109 + self.gamecenter[1])
+                next_pos = (self.gamecenter[0], 74 + self.gamecenter[1])
                 if self.level == 0:
                     Mouse.click(*start_pos)
                 else:
@@ -400,13 +415,13 @@ class TarotCards:
                 card_corner = Image.open("tarot/back8.png")
             # Adjust card positions.
             screengrab = ImageGrab.grab()
-            timeout = time.time() + 10.0
+            timeout = time.time() + 6.0
             for i in range(len(card_positions[self.level])):
                 logging.debug("Calibrating card {0}".format(i))
                 while True:
                     searchx, searchy = card_positions[self.level][i]
-                    searchx += self.xoffset - 6
-                    searchy += self.yoffset - 6
+                    searchx += self.gamecenter[0] - 6
+                    searchy += self.gamecenter[1] - 6
                     newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=10)
                     if time.time() > timeout or newx != -1:
                         break
@@ -417,7 +432,7 @@ class TarotCards:
                 if newx == -1:
                     logging.warning("Failed to calibrate card position {0}".format(i))
                 else:
-                    card_positions[self.level][i] = (newx + 6 - self.xoffset, newy + 6 - self.yoffset)
+                    card_positions[self.level][i] = (newx + 6 - self.gamecenter[0], newy + 6 - self.gamecenter[1])
                 logging.debug("Card {0} offset: {1},{2}".format(i, newx - searchx, newy - searchy))
         else:
             # Game has already started.
@@ -436,15 +451,22 @@ class TarotCards:
                         break
                 self.flip_card(unknownpos, detect=True)
                 # Check if this is a match
-                if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
-                    self.cards_on_board[unknownpos].matched = True
-                    self.cards_on_board[unknownpos - 1].matched = True
-                    matches_remaining -= 1
-                else:
+                match = False
+                for card in self.cards_on_board:
+                    if self.cards_on_board[unknownpos] == card:
+                        self.cards_on_board[unknownpos].matched = True
+                        card.matched = True
+                        matches_remaining -= 1
+                        match = True
+                        break
+                if not match:
                     # Let's wait for the cards to flip back over
                     self.wait_unflip(unknownpos)
+                    # TODO: We need to figure out what card flipped back over.
+                    # Right now we assume it was the card prior to this one.
                 unknownpos += 1
 
+        self.skipstart = False
         # Click pairs to find cards, and eventually match.
         while matches_remaining > 0:
             # seek past any previously matched cards.
@@ -497,9 +519,9 @@ class TarotCards:
                         self.wait_unflip(unknownpos)
                     unknownpos += 1
 
-    def play(self, skip_first_start=False):
+    def play(self):
         self.parse_flips()
-        while self.level < 10:
+        while self.level < len(card_positions):
             max_flips = int(len(card_positions[self.level]) * 1.75)
             if max_flips > self.flips_left:
                 logging.warning("Not enough flips remaining. Bad case flips for next level: {0}".format(max_flips))
@@ -508,12 +530,11 @@ class TarotCards:
                     if answer != 'y':
                         sys.exit(1)
                     else:
-                        Mouse.click(self.xoffset, self.yoffset)
+                        Mouse.click(*self.safeclick)
                         time.sleep(0.1)
                         # Check if flips were added
                         self.parse_flips()
-            self.play_level(skip_first_start)
-            skip_first_start = False
+            self.play_level()
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
                 logger.debug("Added {0} flips.".format(flips_gained[self.level]))
@@ -525,31 +546,8 @@ class TarotCards:
                 sys.exit(0)
             time.sleep(3.0)
 
-    def recognize_file(self):
-        screengrab = Image.open(args.recognize_file)
-        cardnum = 0
-
-        logging.info("Loaded file, offset pixel is: {0}".format(
-            screengrab.getpixel((self.xoffset, self.yoffset))))
-
-        for posx, posy in card_positions[self.level]:
-            cardnum += 1
-            cardimage = screengrab.crop((self.xoffset + posx, self.yoffset + posy,
-                                         self.xoffset + posx + card_width, self.yoffset + posy + card_height))
-            # Check if we recognize this card.
-            matched_name = self.match_card(cardimage)
-            if matched_name is not None:
-                logging.info("Matched card to: {0}".format(matched_name))
-            else:
-                filename = "card_l{0}_c{1}.png".format(self.level + 1, cardnum)
-                cardimage.save(filename)
-                logging.info("Failed to match, card image saved to: {0}".format(filename))
-        sys.exit(0)
-
 
 tarot = TarotCards()
-if args.recognize_file:
-    tarot.recognize_file()
 
 tarot.orient()
 
@@ -558,14 +556,8 @@ if args.guessflips:
     print("Guessed {0} flips left.".format(tarot.flips_left))
     sys.exit(0)
 
-if args.skipstart:
-    # Let's autodetect the level
-    logging.error("Skipping the start is unfortunately unsupported at this time.")
-    sys.exit(1)
-
 for i in range(args.attempts):
-    tarot.play(args.skipstart)
-    args.skipstart = False
+    tarot.play()
     tarot.level = 0
     time.sleep(1.0)
 
