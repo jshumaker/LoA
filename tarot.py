@@ -407,7 +407,7 @@ class TarotCards:
             Mouse.move(*cardpos)
             if Mouse.cursor_is_hand():
                 break
-            time.sleep(0.100)
+            time.sleep(0.025)
 
     def play_level(self):
         logging.info("Playing level {0}".format(self.level + 1))
@@ -516,7 +516,7 @@ class TarotCards:
                                     sys.exit(1)
                                 if not self.flip_card(c2, detect=False):
                                     logging.warning("Warning, failed to flip {0}. Trying pair again.".format(c1))
-                                    #We might have missed detection before they flipped back? Let's try one more time.
+                                    #We might have missed detection before they flipped back? Let's again.
                                     time.sleep(2.0)
                                 else:
                                     break
@@ -575,7 +575,7 @@ class TarotCards:
                 logging.warning("Not enough flips remaining. Bad case flips for next level: {0}".format(max_flips))
                 if not args.force:
                     answer = input("Do you wish to continue? (y/n): ")
-                    if answer != 'y':
+                    if answer.lower() != 'y':
                         sys.exit(1)
                     else:
                         Mouse.click(*self.safeclick)
