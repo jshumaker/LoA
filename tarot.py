@@ -6,6 +6,7 @@ import argparse
 import os.path
 from utility.mouse import *
 from utility.screen import *
+from utility.logconfig import *
 from PIL import ImageGrab, Image
 import logging
 import functools
@@ -41,26 +42,12 @@ Send debug output to console. It is always sent to log file, so this is rarely r
 args = parser.parse_args()
 
 
-VERBOSE = 15
-logging.addLevelName(VERBOSE, "VERBOSE")
+
 loglevel = VERBOSE
 if args.debug:
     loglevel = logging.DEBUG
-logger = logging.getLogger('')
-logger.setLevel(loglevel)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('tarot.log', mode='w')
-fh.setLevel(loglevel)
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+
+logconfig('tarot', loglevel)
 
 
 # Level card positions. Positions are at top left part of card inside the boarder. When flipped this is a
@@ -293,7 +280,7 @@ class TarotCards:
                 break
             if digit_value is None:
                 imagefile = "digit{0}.png".format(x)
-                logger.warning('Failed to match digit, saving to ' + imagefile)
+                logging.warning('Failed to match digit, saving to ' + imagefile)
                 digit_image.save(imagefile)
             else:
                 value = value * 10 + int(digit_value)
@@ -324,7 +311,7 @@ class TarotCards:
             digit_image.close()
         return value
 
-    def flip_card(self, cardnum, detect=False):
+    def flip_card(self, cardnum, detect=False, fliptimeout=6.0, clicktimeout=1.0):
         if self.flips_left <= 0:
             # Let's double check the flips left.
             self.parse_flips()
@@ -334,35 +321,37 @@ class TarotCards:
         cardpos = (self.gamecenter[0] + card_positions[self.level][cardnum][0] + int(card_width / 2),
                    self.gamecenter[1] + card_positions[self.level][cardnum][1] + 15)
         logging.log(VERBOSE, "Flipping level {0} card {1} at position {2}".format(self.level, cardnum, cardpos))
-        cursor = Mouse.get_cursor(cardpos)
-        logging.debug("Pre-flip, cursor is: {0}".format(cursor))
-        timeout = time.time() + 12
+        timeout = time.time() + fliptimeout
+        card_back = True
         while time.time() < timeout:
             Mouse.click(*cardpos)
-            # Wait for cursor to change to pointer.
-            time.sleep(0.50)
-            clicktimeout = time.time() + 1.0
-            while time.time() < clicktimeout and Mouse.get_cursor(cardpos) != Mouse.arrow_cursor:
+            clicktimeout_time = time.time() + clicktimeout
+            # Wait for card back to go away.
+            while time.time() < clicktimeout_time and card_back:
+                card_back = self.detect_card_back(cardnum)[0] != -1
                 time.sleep(0.010)
-            if Mouse.cursor_is_arrow(cardpos):
-                if detect:
-                    if self.detect_card(cardnum):
-                        break
-                    if self.find_next()[0] != -1:
-                        logging.log(VERBOSE, "Next button is up, the level finished.")
-                        break
-                    if time.time() > timeout:
-                        logging.error("Failed to detect card {0} level {1}".format(cardnum, self.level))
-                        ImageGrab.grab().save("failed_detection.png")
-                        logging.info("Screenshot saved to failed_detection.png")
-                        sys.exit(1)
-                else:
-                    break
-            logging.warning("Card click was not registered for 1 second, clicking again.")
-        cursor = Mouse.get_cursor(cardpos)
-        logging.debug("Post-flip, cursor is: {0}".format(cursor))
+            if not card_back:
+                break
+            logging.warning("Card click does not appear to have registered, clicking again.")
+        if card_back:
+            logging.error("Timed out waiting for card to flip over.")
+            return False
+        # Sleep a bit to wait for the card to flip.
+        time.sleep(0.050)
         self.flips_left -= 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
+        if detect:
+            if self.detect_card(cardnum):
+                return True
+            elif self.find_next()[0] != -1:
+                logging.log(VERBOSE, "Next button is up, the level finished.")
+                return True
+            else:
+                logging.error("Failed to detect card {0} level {1}".format(cardnum, self.level))
+                ImageGrab.grab().save("failed_detection.png")
+                logging.info("Screenshot saved to failed_detection.png")
+                return False
+        return True
 
     def detect_card_back(self, cardnum, radius=3):
         if self.level < 3:
@@ -382,21 +371,10 @@ class TarotCards:
         card_corner.close()
         return newx, newy
 
-    def detect_card(self, cardnum, dumb=False):
-        retries = 0
-        if dumb:
-            retry_max = 1
-        else:
-            # Wait for card to not be a card back.
-            timeout = time.time() + 1.0
-            while time.time() < timeout and self.detect_card_back(cardnum)[0] != -1:
-                time.sleep(0.050)
-            # Wait for flip to complete.
-            time.sleep(0.100)
-            retry_max = 15
-        # Try to detect the card.
-        while retries < retry_max:
-            retries += 1
+    def detect_card(self, cardnum, dumb=False, timeout=1.5):
+        logging.log(VERBOSE, "Attempting to detect card {0}".format(cardnum))
+        timeout_time = time.time() + timeout
+        while time.time() < timeout_time:
             searchx = self.gamecenter[0] + card_positions[self.level][cardnum][0]
             searchy = self.gamecenter[1] + card_positions[self.level][cardnum][1]
             card_name, x, y = detect_image(ImageGrab.grab(),
@@ -408,7 +386,6 @@ class TarotCards:
                 logging.info("Matched card {0} to: {1}  offset: {2}, {3}".format(cardnum, card_name, searchx - x, searchy - y))
                 self.cards_on_board[cardnum].name = card_name
                 return True
-                time.sleep(0.1)
             elif not dumb and self.learn:
                 # Wait a little longer for the card flip to definitely complete.
                 time.sleep(0.150)
@@ -418,6 +395,9 @@ class TarotCards:
                 card_image.save("tarot/cards/{0}.png".format(card_name))
                 logging.warning("Learned new card, saved as {0}.".format(card_name))
                 self.tarot_cards.append((card_name, card_image.crop((0, 0, 15, 15))))
+            elif dumb:
+                return False
+            time.sleep(0.010)
         return False
 
     def wait_unflip(self, cardnum):
@@ -527,15 +507,31 @@ class TarotCards:
                 if self.cards_on_board[c1].name is not None and not self.cards_on_board[c1].matched:
                     for c2 in range(len(self.cards_on_board)):
                         if c1 != c2 and self.cards_on_board[c1] == self.cards_on_board[c2]:
-                            self.flip_card(c1)
-                            self.flip_card(c2)
+                            retry = 0
+                            retry_max = 2
+                            while retry < retry_max:
+                                retry += 1
+                                if not self.flip_card(c1, detect=False):
+                                    logging.error("Error, failed to flip {0}".format(c1))
+                                    sys.exit(1)
+                                if not self.flip_card(c2, detect=False):
+                                    logging.warning("Warning, failed to flip {0}. Trying pair again.".format(c1))
+                                    #We might have missed detection before they flipped back? Let's try one more time.
+                                    time.sleep(2.0)
+                                else:
+                                    break
+                            if retry >= retry_max:
+                                logging.error("Exhausted retries to flip pair")
+                                sys.exit(1)
                             self.cards_on_board[c1].matched = True
                             self.cards_on_board[c2].matched = True
                             matches_remaining -= 1
                             continue
 
             # Flip the next unknown card.
-            self.flip_card(unknownpos, detect=True)
+            if not self.flip_card(unknownpos, detect=True):
+                logging.error("Error, failed to flip {0}".format(unknownpos))
+                sys.exit(1)
 
             # Check if this card matches any we know.
             matched = False
@@ -558,7 +554,9 @@ class TarotCards:
                     matches_remaining -= 1
                 else:
                     # Detect the card.
-                    self.flip_card(unknownpos, detect=True)
+                    if not self.flip_card(unknownpos, detect=True):
+                        logging.error("Error, failed to flip {0}".format(unknownpos))
+                        sys.exit(1)
                     # Check if this is a match
                     if self.cards_on_board[unknownpos] == self.cards_on_board[unknownpos - 1]:
                         self.cards_on_board[unknownpos].matched = True
@@ -587,7 +585,7 @@ class TarotCards:
             self.play_level()
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
-                logger.debug("Added {0} flips.".format(flips_gained[self.level]))
+                logging.debug("Added {0} flips.".format(flips_gained[self.level]))
             time.sleep(0.5)
             self.parse_flips()
             logging.info("Flips left: {0}".format(self.flips_left))
