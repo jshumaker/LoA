@@ -125,6 +125,8 @@ digit_width = 10
 digit_height = 16
 
 
+card_match_size = 10
+
 class CardOnBoard:
     def __init__(self, position):
         self.name = None
@@ -156,7 +158,7 @@ class TarotCards:
             name = os.path.basename(file)
             name, ext = os.path.splitext(name)
             # Limit compared card size to 30x20
-            self.tarot_cards.append((name, Image.open(file).crop((0, 0, 15, 15))))
+            self.tarot_cards.append((name, Image.open(file).crop((0, 0, card_match_size, card_match_size))))
             logging.debug("Loaded card: {0}".format(name))
 
         logging.info("Loading digits...")
@@ -337,7 +339,7 @@ class TarotCards:
             logging.error("Timed out waiting for card to flip over.")
             return False
         # Sleep a bit to wait for the card to flip.
-        time.sleep(0.050)
+        time.sleep(0.150)
         self.flips_left -= 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
         if detect:
@@ -375,6 +377,7 @@ class TarotCards:
         logging.log(VERBOSE, "Attempting to detect card {0}".format(cardnum))
         timeout_time = time.time() + timeout
         while time.time() < timeout_time:
+            logging.log(VERBOSE, "Checking against cards...")
             searchx = self.gamecenter[0] + card_positions[self.level][cardnum][0]
             searchy = self.gamecenter[1] + card_positions[self.level][cardnum][1]
             card_name, x, y = detect_image(ImageGrab.grab(),
@@ -388,16 +391,15 @@ class TarotCards:
                 return True
             elif not dumb and self.learn:
                 # Wait a little longer for the card flip to definitely complete.
-                time.sleep(0.150)
+                time.sleep(0.100)
                 card_image = ImageGrab.grab((searchx, searchy, searchx + 70, searchy + 123))
                 self.learncount += 1
                 card_name = "Unknown{0}".format(self.learncount)
                 card_image.save("tarot/cards/{0}.png".format(card_name))
                 logging.warning("Learned new card, saved as {0}.".format(card_name))
-                self.tarot_cards.append((card_name, card_image.crop((0, 0, 15, 15))))
+                self.tarot_cards.append((card_name, card_image.crop((0, 0, card_match_size, card_match_size))))
             elif dumb:
                 return False
-            time.sleep(0.010)
         return False
 
     def wait_unflip(self, cardnum):
