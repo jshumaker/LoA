@@ -1,5 +1,6 @@
 import argparse
 from grid import *
+from utility.logconfig import *
 import logging
 
 
@@ -100,10 +101,6 @@ if __name__ == '__main__':
     Warning: potentially 40^depth moves have to be tested. Increasing this
     exponentially increases processing time.
     """)
-    parser.add_argument('--delay', type=float, default=1.0, help="""
-    How many seconds to wait after clicking. Default is 1.0.
-    For slow connections or computers, increase this value.
-    """)
     parser.add_argument('--fast0', action='store_true', help="""
     If best move is a zero point move, perform the next submove without recalculating.
     Runs faster, but at expensive of higher average points.
@@ -120,13 +117,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.debug:
-        print("Enabling debug mode.")
+        logging.info("Enabling debug mode.")
         Grid.debug = True
 
     if args.fast0:
         Grid.fast0 = True
-
-    Grid.delay = args.delay
 
     # Broken by the current multiprocessing.
     #Grid.GridItemTypes = [
@@ -160,10 +155,10 @@ if __name__ == '__main__':
         else:
             board.simulate_play(args.depth, args.energy)
 
-    loglevel = logging.INFO
+    loglevel = VERBOSE
     if args.debug:
         loglevel = logging.DEBUG
-    logging.basicConfig(filename='dragonsoul.log', level=loglevel)
+    logconfig('dragonsoul', loglevel)
 
     if args.energy > 0:
         remaining_energy = args.energy
@@ -188,7 +183,7 @@ if __name__ == '__main__':
     #Move the mouse away
     win32api.SetCursorPos((xoffset - 50, yoffset - 50))
     board = Board(xoffset, yoffset, depth=args.depth, processes=args.processes)
-    print("The starting grid appears to be:")
+    logging.info("The starting grid appears to be:")
     board.print_grid()
 
     board.play(remaining_energy, depth=args.depth)

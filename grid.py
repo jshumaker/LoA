@@ -8,6 +8,7 @@ import time
 import random
 from multiprocessing import Pool, cpu_count
 import signal
+from utility.logconfig import *
 
 from PIL import ImageGrab
 
@@ -39,7 +40,7 @@ def calibrate_colors():
             posy = yoffset + (y * 50)
             row.append(get_avg_pixel(screengrab, posx, posy))
 
-        print(", ".join([str(color) for color in row]))
+        logging.info(", ".join([str(color) for color in row]))
 
 
 class Move:
@@ -113,11 +114,13 @@ class Grid:
         else:
             self.processes = processes
 
+        self.selected_image = Image.open('grid/selected.png')
+
         if grid is None:
             screengrab = ImageGrab.grab()
 
             # Let's try to adjust the offsets to see if there's a more accurate position.
-            print("Searching for good reference point...")
+            logging.info("Searching for good reference point...")
             griditem, best_accuracy = guess_grid_item(get_avg_pixel(screengrab, xoffset, yoffset))
             best_x = xoffset
             best_y = yoffset
@@ -137,7 +140,7 @@ class Grid:
             self.yoffset = yoffset
 
             if not self.update():
-                print("ERROR: Initial accuracy of board recognition is too low.")
+                logging.error("Initial accuracy of board recognition is too low.")
                 sys.exit(1)
         else:
             #Use the supplied grid.
@@ -168,9 +171,7 @@ class Grid:
             for y in range(5):
                 posx = self.xoffset + (x * 50)
                 posy = self.yoffset + (y * 50)
-                #print("{0}, {1} : {2}".format(x, y, get_avg_pixel(screengrab, posx, posy)))
                 griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
-                #colors += " {0:>10}({1:>03.1f}%)".format(gem.name, accuracy * 100.0)
                 column.append(griditemtype)
                 if accuracy < lowest_accuracy:
                     lowest_accuracy = accuracy
@@ -181,14 +182,14 @@ class Grid:
         if lowest_accuracy < 0.60:
             return False
         if compareprevious and not item_changed:
-            print("WARNING: grid did not change.")
+            logging.warning("Grid did not change.")
         oldgrid = self.grid
         self.grid = newgrid
 
         # Make sure the game didn't enter some bad state.
         self.clear()
         if self.drop() > 0:
-            print("WARNING: The updated grid contains gems that should have cleared.")
+            logging.warning("The updated grid contains gems that should have cleared.")
             self.grid = oldgrid
             return False
 
@@ -233,7 +234,7 @@ class Grid:
         return desc
 
     def print_grid(self):
-        print(self.describe_grid())
+        logging.info("Grid\n" + self.describe_grid())
 
     def process_move_multiprocess(self, move):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -280,7 +281,7 @@ class Grid:
             # Let the other processes know what depth to start at.
             self.depth = depth
             # Spin up threads to calculate the submoves.
-            logging.info("Launching 4 threads...")
+            logging.debug("Launching 4 threads...")
             try:
                 pool = Pool(processes=self.processes)
                 result = pool.map_async(self.process_move_multiprocess, possible_moves)
@@ -319,7 +320,7 @@ class Grid:
 
         return best_move
 
-    def do_swap(self, swap, delay, timeout=30.000):
+    def do_swap(self, swap, timeout=30.000):
 
         x1 = swap.x1 * 50 + self.xoffset
         y1 = swap.y1 * 50 + self.yoffset
@@ -334,32 +335,38 @@ class Grid:
             if Mouse.cursor_is_hand():
                 break
             elif retry_count > 5:
-                print("ERROR: cursor was not hand at intended click target.")
-                print("Current: {0} Hand: {1} Arrow: {2}".format(
+                logging.error("ERROR: cursor was not hand at intended click target.")
+                logging.error("Current: {0} Hand: {1} Arrow: {2}".format(
                     Mouse.get_cursor(), Mouse.hand_cursor, Mouse.arrow_cursor))
                 return False
-            time.sleep(0.200)
-        #print("Clicking: {0}".format((x1, y1)))
+            time.sleep(0.100)
         Mouse.click(x1, y1)
-        time.sleep(delay)
+        # Wait for selection reticule to come up.
+        select_timeout = time.time() + 2.0
+        while time.time() < select_timeout:
+            x, y = image_search(ImageGrab.grab(), self.selected_image, x1 - 25, y1 - 25)
+            if x != -1:
+                logging.debug("Reticule offset: {0}, {1}".format(x - x1 + 25, y - y1 + 25))
+                break
         starttime = time.time()
-        #print("Clicking: {0}".format((x2, y2)))
         Mouse.click(x2, y2)
+        deselect_timeout = time.time() + 2.0
+        while time.time() < deselect_timeout:
+            x, y = image_search(ImageGrab.grab(), self.selected_image, x1 - 25, y1 - 25)
+            if x == -1:
+                break
         time.sleep(0.100)
-        #if swap.points > 0 and Mouse.cursor_is_hand():
-        #    print("ERROR: Move didn't start.")
-        #    return False
-        time.sleep(delay)
         while True:
+            # Jitter the mouse, or else it doesn't seem to always update.
+            Mouse.move(x2-50, y2-50)
             Mouse.move(x2, y2)
             time.sleep(0.010)
             if Mouse.cursor_is_hand():
                 return True
             if starttime + timeout < time.time():
-                print("ERROR: Timed out waiting for move to complete.")
+                logging.error("Timed out waiting for move to complete.")
                 return False
             time.sleep(0.100)
-        time.sleep(delay)
 
     def swap(self, swap):
         tempitem = self.grid[swap.x1][swap.y1]
@@ -396,7 +403,7 @@ class Grid:
         Examine grid for cleared gems, drop remaining gems above.
         """
         if self.cleared is None:
-            print("No cleared data, can't drop.")
+            logging.error("No cleared data, can't drop.")
             sys.exit(1)
         drop_count = 0
         # Drop the columns.
@@ -468,14 +475,13 @@ class Grid:
             self.grid = randomgrid
             # Normalize the board so nothing is ready to clear.
             self.simulate(fillrandom=True, probabilitypoints=False)
-            print("Random starting grid:")
+            logging.info("Random starting grid:")
             self.print_grid()
             sim_moves = 0
             while sim_moves < energy:
                 move = self.best_move(depth, thread=True)
-                #print("Best Move Sequence: {0}".format(move.describe()))
                 if move.get_total_points() == 0.0:
-                    print("ERROR: Calculated move sequence gives zero points.")
+                    logging.error("Calculated move sequence gives zero points.")
                     sys.exit(1)
                 points = 0
                 while points == 0:
@@ -485,8 +491,8 @@ class Grid:
                     points, sub_move = self.simulate(fillrandom=True, probabilitypoints=False)
                     total_points += points
                     if total_moves % 10 == 1:
-                        print("Move Points | Avg Points | Sim Moves | Total Moves | Avg Calc Time")
-                    print("{0:>11} | {1:>10.1f} | {2:>9} | {3:11} | {4:0.1f}".format(
+                        logging.info("Move Points | Avg Points | Sim Moves | Total Moves | Avg Calc Time")
+                    logging.info("{0:>11} | {1:>10.1f} | {2:>9} | {3:11} | {4:0.1f}".format(
                         points, (float(total_points) / total_moves), sim_moves, total_moves,
                         (time.time() - starttime) / total_moves))
                     if Grid.fast0:
@@ -496,42 +502,41 @@ class Grid:
 
     def play(self, remaining_energy, depth=2):
         startime = time.time()
+        startenergy = remaining_energy
         while remaining_energy > 0:
             retry_count = 0
             while True:
                 if not self.update():
                     retry_count += 1
                     if retry_count >= 10:
-                        print("Failed to accurately update board 10 times. Giving up.")
+                        logging.error("Failed to accurately update board 10 times. Giving up.")
                         sys.exit(1)
                     else:
                         time.sleep(1.0)
                 else:
                     break
 
-            print("Calculating move...")
+            logging.log(VERBOSE, "Calculating move...")
             movestartime = time.time()
             if remaining_energy < depth:
                 move = self.best_move(depth=remaining_energy, thread=True)
             else:
                 move = self.best_move(depth, thread=True)
             duration = time.time() - movestartime
-            print("Calculating best move took: {0:.3f}s".format(duration))
-            print("Best Move Sequence: {0}".format(move.describe()))
+            logging.log(VERBOSE, "Calculating best move took: {0:.3f}s".format(duration))
+            logging.info("Best Move Sequence: {0}".format(move.describe()))
             if move.get_total_points() == 0.0:
-                print("ERROR: Calculated move sequence gives zero points.")
+                logging.error("ERROR: Calculated move sequence gives zero points.")
                 sys.exit(1)
             if remaining_energy <= depth and move.get_total_points() < 1.0:
-                print("Not using last energy, no move give points.")
+                logging.info("Not using last energy, no move gives points.")
                 break
             lastmove_points = 0
             # Iterate over moves until one is performed that is expected to give >0 points
             while lastmove_points == 0:
                 remaining_energy -= 1
-                if not self.do_swap(move, Grid.delay):
+                if not self.do_swap(move):
                     sys.exit(1)
-                if remaining_energy > 1:
-                    time.sleep(Grid.delay)
                 if Grid.fast0:
                     lastmove_points = move.points
                     move = move.submove
@@ -539,4 +544,5 @@ class Grid:
                     lastmove_points = -1
 
         duration = time.time() - startime
-        print("Moves complete, total time: {0:.3f}s".format(duration))
+        logging.info("Moves complete, total time: {0:.3f}s time per move: {1:.3f}s".format(
+            duration, duration / startenergy))
