@@ -116,8 +116,9 @@ class TarotCards:
         self.skipstart = False
         self.learn = learn
         self.learncount = 0
-        self.netflips = 0
+        self.freeflips = 0
         self.extraflips = 0
+        self.freeflipsonly = False
 
         logging.info("Loading cards...")
         self.tarot_cards = []
@@ -313,6 +314,9 @@ class TarotCards:
         if self.flips_left <= 0:
             logging.error("No flips remaining!")
             sys.exit(1)
+        if self.freeflipsonly and self.freeflips <= 0:
+            logging.error("No freeflips remaining, only extra flips remaining.")
+            sys.exit(1)
         cardpos = (self.gamecenter[0] + card_positions[self.level][cardnum][0] + int(card_width / 2),
                    self.gamecenter[1] + card_positions[self.level][cardnum][1] + 15)
         logging.log(VERBOSE, "Flipping level {0} card {1} at position {2}".format(self.level, cardnum, cardpos))
@@ -334,8 +338,8 @@ class TarotCards:
         # Sleep a bit to wait for the card to flip.
         time.sleep(0.200)
         self.flips_left -= 1
-        self.netflips -= 1
-        if self.netflips < 0:
+        self.freeflips -= 1
+        if self.freeflips < 0:
             self.extraflips += 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
         if detect:
@@ -563,26 +567,32 @@ class TarotCards:
         self.parse_flips()
         self.extraflips = 0
         if self.level == 0:
-            self.netflips = 15
+            self.freeflips = 15
         while self.level < len(card_positions):
             max_flips = int(len(card_positions[self.level]) * 1.75)
             if max_flips > self.flips_left:
                 logging.warning("Not enough flips remaining. Bad case flips for next level: {0}".format(max_flips))
+                print("How do you wish to proceed?")
+                print("1: Continue play using only free flips, leaving extras to carry over.")
+                print("2: Use all remaining flips.")
+                print("3: Exit.")
                 if not args.force:
-                    answer = input("Do you wish to continue? (y/n): ")
-                    if answer.lower() != 'y':
-                        sys.exit(1)
-                    else:
+                    answer = int(input("Choice [1]: "))
+                    if answer == 1:
+                        self.freeflipsonly = True
+                    if answer == 1 or answer == 2:
                         Mouse.click(*self.safeclick)
                         time.sleep(0.1)
                         # Check if flips were added
                         self.parse_flips()
+                    else:
+                        sys.exit(1)
             self.play_level()
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
-                if self.netflips < 0:
-                    self.netflips = 0
-                self.netflips += flips_gained[self.level]
+                if self.freeflips < 0:
+                    self.freeflips = 0
+                self.freeflips += flips_gained[self.level]
                 logging.debug("Added {0} flips.".format(flips_gained[self.level]))
             time.sleep(0.5)
             self.parse_flips()
