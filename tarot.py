@@ -117,6 +117,7 @@ class TarotCards:
         self.learn = learn
         self.learncount = 0
         self.netflips = 0
+        self.extraflips = 0
 
         logging.info("Loading cards...")
         self.tarot_cards = []
@@ -305,7 +306,7 @@ class TarotCards:
             digit_image.close()
         return value
 
-    def flip_card(self, cardnum, detect=False, fliptimeout=6.0, clicktimeout=1.0):
+    def flip_card(self, cardnum, detect=False, fliptimeout=12.1, clicktimeout=1.0):
         if self.flips_left <= 0:
             # Let's double check the flips left.
             self.parse_flips()
@@ -334,6 +335,8 @@ class TarotCards:
         time.sleep(0.200)
         self.flips_left -= 1
         self.netflips -= 1
+        if self.netflips < 0:
+            self.extraflips += 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
         if detect:
             if self.detect_card(cardnum):
@@ -558,6 +561,7 @@ class TarotCards:
 
     def play(self):
         self.parse_flips()
+        self.extraflips = 0
         if self.level == 0:
             self.netflips = 15
         while self.level < len(card_positions):
@@ -576,6 +580,8 @@ class TarotCards:
             self.play_level()
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
+                if self.netflips < 0:
+                    self.netflips = 0
                 self.netflips += flips_gained[self.level]
                 logging.debug("Added {0} flips.".format(flips_gained[self.level]))
             time.sleep(0.5)
@@ -585,7 +591,7 @@ class TarotCards:
             if args.singlelevel:
                 sys.exit(0)
             time.sleep(3.0)
-        logging.info("Net flips used: {0}".format(self.netflips))
+        logging.info("Extra flips used: {0}".format(self.extraflips))
 
 
 if __name__ == '__main__':
