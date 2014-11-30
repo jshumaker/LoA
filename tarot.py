@@ -14,42 +14,6 @@ import math
 import operator
 import time
 
-parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards.')
-parser.add_argument('--attempts', '-a', type=int, default=1, help="""
-How many attempts to do. Only continues upon a successful lvl 10 completion. Defaults to 1.
-""")
-parser.add_argument('--skipstart', '-n', action='store_true', help="""
-Broken currently.
-Skip the start/next button click at the beginning, use when having script continue a level that is in-progress.
-Also triggers automatic level detection.
-""")
-parser.add_argument('--force', action='store_true', help="""
-Play a level even if not enough flips to complete it. Additionally
-keep flipping even if we don't think we have enough flips left.
-""")
-parser.add_argument('--singlelevel', '-s', action='store_true', help="""
-Only play 1 level, good for debugging.
-""")
-parser.add_argument('--guessflips', action='store_true', help="""
-Try to parse the number of flips remaining.
-""")
-parser.add_argument('--learn', action='store_true', help="""
-Try and learn new cards while playing.
-""")
-parser.add_argument('--debug', action='store_true', help="""
-Send debug output to console. It is always sent to log file, so this is rarely recommended.
-""")
-args = parser.parse_args()
-
-
-
-loglevel = VERBOSE
-if args.debug:
-    loglevel = logging.DEBUG
-
-logconfig('tarot', loglevel)
-
-
 # Level card positions. Positions are at top left part of card inside the boarder. When flipped this is a
 # noinspection PyPep8
 card_positions = [
@@ -149,6 +113,7 @@ class TarotCards:
         self.skipstart = False
         self.learn = learn
         self.learncount = 0
+        self.netflips = 0
 
         logging.info("Loading cards...")
         self.tarot_cards = []
@@ -341,6 +306,7 @@ class TarotCards:
         # Sleep a bit to wait for the card to flip.
         time.sleep(0.150)
         self.flips_left -= 1
+        self.netflips -= 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
         if detect:
             if self.detect_card(cardnum):
@@ -373,7 +339,7 @@ class TarotCards:
         card_corner.close()
         return newx, newy
 
-    def detect_card(self, cardnum, dumb=False, timeout=1.5):
+    def detect_card(self, cardnum, dumb=False, timeout=3.0):
         logging.log(VERBOSE, "Attempting to detect card {0}".format(cardnum))
         timeout_time = time.time() + timeout
         while time.time() < timeout_time:
@@ -571,6 +537,8 @@ class TarotCards:
 
     def play(self):
         self.parse_flips()
+        if self.level == 0:
+            self.netflips = 15
         while self.level < len(card_positions):
             max_flips = int(len(card_positions[self.level]) * 1.75)
             if max_flips > self.flips_left:
@@ -587,6 +555,7 @@ class TarotCards:
             self.play_level()
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
+                self.netflips += flips_gained[self.level]
                 logging.debug("Added {0} flips.".format(flips_gained[self.level]))
             time.sleep(0.5)
             self.parse_flips()
@@ -595,19 +564,57 @@ class TarotCards:
             if args.singlelevel:
                 sys.exit(0)
             time.sleep(3.0)
+        logging.info("Net flips used: {0}".format(self.netflips))
 
 
-tarot = TarotCards(learn=args.learn)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Automatically play LoA Tarot Cards.')
+    parser.add_argument('--attempts', '-a', type=int, default=1, help="""
+    How many attempts to do. Only continues upon a successful lvl 10 completion. Defaults to 1.
+    """)
+    parser.add_argument('--skipstart', '-n', action='store_true', help="""
+    Broken currently.
+    Skip the start/next button click at the beginning, use when having script continue a level that is in-progress.
+    Also triggers automatic level detection.
+    """)
+    parser.add_argument('--force', action='store_true', help="""
+    Play a level even if not enough flips to complete it. Additionally
+    keep flipping even if we don't think we have enough flips left.
+    """)
+    parser.add_argument('--singlelevel', '-s', action='store_true', help="""
+    Only play 1 level, good for debugging.
+    """)
+    parser.add_argument('--guessflips', action='store_true', help="""
+    Try to parse the number of flips remaining.
+    """)
+    parser.add_argument('--learn', action='store_true', help="""
+    Try and learn new cards while playing.
+    """)
+    parser.add_argument('--debug', action='store_true', help="""
+    Send debug output to console. It is always sent to log file, so this is rarely recommended.
+    """)
+    args = parser.parse_args()
 
-tarot.orient()
 
-if args.guessflips:
-    tarot.parse_flips()
-    print("Guessed {0} flips left.".format(tarot.flips_left))
-    sys.exit(0)
 
-for i in range(args.attempts):
-    tarot.play()
-    tarot.level = 0
-    time.sleep(1.0)
+    loglevel = VERBOSE
+    if args.debug:
+        loglevel = logging.DEBUG
+
+    logconfig('tarot', loglevel)
+
+
+    tarot = TarotCards(learn=args.learn)
+
+    tarot.orient()
+
+    if args.guessflips:
+        tarot.parse_flips()
+        print("Guessed {0} flips left.".format(tarot.flips_left))
+        sys.exit(0)
+
+    for i in range(args.attempts):
+        tarot.play()
+        tarot.level = 0
+        time.sleep(1.0)
 
