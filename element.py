@@ -6,6 +6,7 @@ import argparse
 import os.path
 from utility.mouse import *
 from utility.screen import *
+from utility.logconfig import *
 from PIL import ImageGrab, Image
 import logging
 import functools
@@ -23,24 +24,10 @@ Enable debug mode, a element.log file will be output with extra details.
 args = parser.parse_args()
 
 
-loglevel = logging.INFO
+loglevel = VERBOSE
 if args.debug:
     loglevel = logging.DEBUG
-logger = logging.getLogger('')
-logger.setLevel(loglevel)
-# create file handler which logs even debug messages
-fh = logging.FileHandler('element.log', mode='w')
-fh.setLevel(loglevel)
-# create console handler with a higher log level
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
-# create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add the handlers to the logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+logconfig('element', loglevel)
 
 upgrade_offset = (146, 225)
 upgrade_image = Image.open('element/Upgrade.png')
@@ -63,7 +50,7 @@ if upgrade_pos[0] == -1:
     logging.error("Failed to find upgrade button, expected it to be near {0}, {1}".format(expected_x, expected_y))
     sys.exit(1)
 
-logging.debug("Upgrade button found at: {0}, offset: {1},{2}".format(
+logging.log(VERBOSE, "Upgrade button found at: {0}, offset: {1},{2}".format(
     upgrade_pos, expected_x - upgrade_pos[0], expected_y - upgrade_pos[1]))
 
 # Adjust pos to be a clicking position.
@@ -87,7 +74,7 @@ for file in glob.glob(globstring):
     name = os.path.basename(file)
     name, ext = os.path.splitext(name)
     digits.append((name, Image.open(file)))
-    logging.debug("Loaded digit: {0}".format(name))
+    logging.log(VERBOSE, "Loaded digit: {0}".format(name))
 
 
 total_upgrade = 0
@@ -99,10 +86,10 @@ for i in range(1, args.attempts + 1):
     timeout = time.time() + 5.0
     while time.time() < timeout and not Mouse.cursor_is_hand(upgrade_pos):
         time.sleep(0.050)
-    time.sleep(0.100)
     if time.time() > timeout:
         logging.error("Error while waiting for upgrade button to respond.")
         sys.exit(1)
+    time.sleep(0.150)
     # Get the digit values.
     timeout = time.time() + 5.0
     failure = False
@@ -110,13 +97,14 @@ for i in range(1, args.attempts + 1):
         digit_total = 0
         screengrab = ImageGrab.grab()
         for pos in digit_positions:
-            name, x, y = detect_image(screengrab, digits, *pos, radius=5)
+            name, x, y = detect_image(screengrab, digits, *pos, radius=3)
             if name is None:
                 logging.debug("Failed to recognize digit, retrying in 100ms.")
                 time.sleep(0.100)
                 failure = True
                 break
-            logging.debug("Recognized digit: {0} Offset: {1}, {2}".format(name, x - pos[0], y - pos[1]))
+            logging.log(VERBOSE, "Recognized digit: {0} Offset: {1}, {2}".format(name, x - pos[0], y - pos[1]))
+
             digit_total += int(name)
         if not failure:
             break
