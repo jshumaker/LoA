@@ -60,8 +60,8 @@ def compare_images(i1, i2):
     if i1.size != i2.size:
         raise ValueError("Image sizes for comparison do not match. {0} vs {1}".format(i1.size, i2.size))
     width, height = i1.size
-    for x in range(width - 1):
-        for y in range(height - 1):
+    for x in range(width):
+        for y in range(height):
             pixel1 = i1.getpixel((x, y))
             pixel2 = i2.getpixel((x, y))
 
@@ -201,7 +201,7 @@ def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, 
     best_y = -1
     for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy):
         rms = compare_images(screengrab.crop((x, y, x + image_width, y + image_height)), image)
-        logging.debug("Image Search {0},{1}  rms: {2}".format(x, y, rms))
+        logging.debug("Image Search {0},{1}  rms: {2:>10.3f}".format(x, y, rms))
         if best_rms is None or rms < best_rms:
             best_y = y
             best_x = x
@@ -226,7 +226,7 @@ def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=
     image_width, image_height = imageset[0][1].size
     if threshold is None:
         # Use an automatic threshold.
-        best_rms = image_width * image_height * 10.0
+        best_rms = image_width * image_height * 20.0
     else:
         best_rms = threshold
 
@@ -240,7 +240,7 @@ def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=
         for name, image in imageset:
             image_width, image_height = image.size
             rms = compare_images(screengrab.crop((x, y, x + image_width, y + image_height)), image)
-            logging.debug("Image Search {0},{1}  rms: {2} name: {3}".format(x, y, rms, name))
+            logging.debug("Image Search {0},{1}  rms: {2:>10.3f} name: {3}".format(x, y, rms, name))
             if best_rms is None or rms < best_rms:
                 best_y = y
                 best_x = x

@@ -89,7 +89,10 @@ digit_width = 10
 digit_height = 16
 
 
-card_match_size = 10
+# size 100 worst rms 4500
+#card_match_area = (24, 5, 34, 15)
+# size 65 Worst rms 4300
+card_match_area = (2, 13, 67, 14)
 
 class CardOnBoard:
     def __init__(self, position):
@@ -123,7 +126,7 @@ class TarotCards:
             name = os.path.basename(file)
             name, ext = os.path.splitext(name)
             # Limit compared card size to 30x20
-            self.tarot_cards.append((name, Image.open(file).crop((0, 0, card_match_size, card_match_size))))
+            self.tarot_cards.append((name, Image.open(file).crop(card_match_area)))
             logging.debug("Loaded card: {0}".format(name))
 
         logging.info("Loading digits...")
@@ -135,6 +138,28 @@ class TarotCards:
             name, ext = os.path.splitext(name)
             self.digits.append((name, Image.open(file)))
             logging.log(VERBOSE, "Loaded digit: {0}".format(name))
+
+        self.card_corners = {
+            1: Image.open("tarot/back1.png"),
+            3: Image.open("tarot/back3.png"),
+            5: Image.open("tarot/back5.png"),
+            8: Image.open("tarot/back8.png")
+        }
+
+    def compare_cards(self):
+        worst_rms = 10000.0
+        worst_matchup = ''
+        for name1, image1 in self.tarot_cards:
+            for name2, image2 in self.tarot_cards:
+                if name1 != name2:
+                    rms = compare_images(image1, image2)
+                    if rms < worst_rms:
+                        worst_rms = rms
+                        worst_matchup = name1 + ' vs ' + name2
+                    logging.info("{0:>20} vs {1:<20}: {2:>10.3f}".format(name1, name2, rms))
+        logging.info("Size: {2} Worst matchup: {0}  rms: {1:0.3f}".format(
+            worst_matchup, worst_rms, self.tarot_cards[0][1].size[0] * self.tarot_cards[0][1].size[1]))
+        sys.exit(0)
 
     def find_next(self):
         # Search for next button.
@@ -187,29 +212,31 @@ class TarotCards:
         logging.info("Center found at {0}".format(self.gamecenter))
         logging.info("Starting play at level {0}".format(self.level + 1))
 
-        # Let's calibrate this with the first card which is never really covered. Requires first card to be unflipped.
-        if self.level < 3:
-            card_corner = Image.open("tarot/back1.png")
-        elif self.level < 5:
-            card_corner = Image.open("tarot/back3.png")
-        elif self.level < 8:
-            card_corner = Image.open("tarot/back5.png")
-        else:
-            card_corner = Image.open("tarot/back8.png")
-        # Adjust card positions.
+        # Let's calibrate this with the first card which is never really covered.
+        card_corner = self.get_image_back_corner()
+        # Adjust center
         screengrab = ImageGrab.grab()
-        logging.log(VERBOSE, "Calibrating via card 0")
+        logging.log(VERBOSE, "Calibrating via card 0, card back")
         searchx, searchy = card_positions[self.level][0]
         searchx += self.gamecenter[0] - 6
         searchy += self.gamecenter[1] - 6
         newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=20)
+        if newx == -1 and self.skipstart:
+            logging.log(VERBOSE, "Calibrating via card 0, flipped card")
+            # Card might be flipped.
+            searchx = self.gamecenter[0] + card_positions[self.level][0][0] + card_match_area[0]
+            searchy = self.gamecenter[1] + card_positions[self.level][0][1] + card_match_area[1]
+            card_name, newx, newy = detect_image(screengrab, self.tarot_cards,
+                                                 searchx, searchy,
+                                                 radius=20, threshold=2000.0)
         if newx == -1:
-            logging.error("Failed to calibrate")
+            screengrab.save("failed_calibrate.png")
+            logging.error("Failed to calibrate, saved failed_calibrate.png")
             sys.exit(1)
+
         logging.info("Card offset: {0},{1}".format(newx - searchx, newy - searchy))
         self.gamecenter = (self.gamecenter[0] + newx - searchx,
                            self.gamecenter[1] + newy - searchy)
-        card_corner.close()
 
         logging.info("Center adjusted to {0}".format(self.gamecenter))
 
@@ -304,7 +331,7 @@ class TarotCards:
             logging.error("Timed out waiting for card to flip over.")
             return False
         # Sleep a bit to wait for the card to flip.
-        time.sleep(0.150)
+        time.sleep(0.200)
         self.flips_left -= 1
         self.netflips -= 1
         logging.log(VERBOSE, "Flips left: {0}".format(self.flips_left))
@@ -321,22 +348,25 @@ class TarotCards:
                 return False
         return True
 
-    def detect_card_back(self, cardnum, radius=3):
-        if self.level < 3:
-            card_corner = Image.open("tarot/back1.png")
-        elif self.level < 5:
-            card_corner = Image.open("tarot/back3.png")
-        elif self.level < 8:
-            card_corner = Image.open("tarot/back5.png")
+    def get_image_back_corner(self):
+        if self.level < 2:
+            card_corner = self.card_corners[1]
+        elif self.level < 4:
+            card_corner = self.card_corners[3]
+        elif self.level < 7:
+            card_corner = self.card_corners[5]
         else:
-            card_corner = Image.open("tarot/back8.png")
+            card_corner = self.card_corners[8]
+        return card_corner
+
+    def detect_card_back(self, cardnum, radius=3):
+        card_corner = self.get_image_back_corner()
         # Search for card back.
         screengrab = ImageGrab.grab()
         searchx, searchy = card_positions[self.level][cardnum]
         searchx += self.gamecenter[0] - 6
         searchy += self.gamecenter[1] - 6
         newx, newy = image_search(screengrab, card_corner, searchx, searchy, radius=radius)
-        card_corner.close()
         return newx, newy
 
     def detect_card(self, cardnum, dumb=False, timeout=3.0):
@@ -344,26 +374,24 @@ class TarotCards:
         timeout_time = time.time() + timeout
         while time.time() < timeout_time:
             logging.log(VERBOSE, "Checking against cards...")
-            searchx = self.gamecenter[0] + card_positions[self.level][cardnum][0]
-            searchy = self.gamecenter[1] + card_positions[self.level][cardnum][1]
-            card_name, x, y = detect_image(ImageGrab.grab(),
-                                           self.tarot_cards,
-                                           searchx,
-                                           searchy,
-                                           radius=2)
+            searchx = self.gamecenter[0] + card_positions[self.level][cardnum][0] + card_match_area[0]
+            searchy = self.gamecenter[1] + card_positions[self.level][cardnum][1] + card_match_area[1]
+            card_name, x, y = detect_image(ImageGrab.grab(), self.tarot_cards,
+                                           searchx, searchy,
+                                           radius=2, threshold=2000.0)
             if card_name is not None:
                 logging.info("Matched card {0} to: {1}  offset: {2}, {3}".format(cardnum, card_name, searchx - x, searchy - y))
                 self.cards_on_board[cardnum].name = card_name
                 return True
             elif not dumb and self.learn:
                 # Wait a little longer for the card flip to definitely complete.
-                time.sleep(0.100)
+                time.sleep(0.050)
                 card_image = ImageGrab.grab((searchx, searchy, searchx + 70, searchy + 123))
                 self.learncount += 1
                 card_name = "Unknown{0}".format(self.learncount)
                 card_image.save("tarot/cards/{0}.png".format(card_name))
                 logging.warning("Learned new card, saved as {0}.".format(card_name))
-                self.tarot_cards.append((card_name, card_image.crop((0, 0, card_match_size, card_match_size))))
+                self.tarot_cards.append((card_name, card_image.crop(card_match_area)))
             elif dumb:
                 return False
         return False
@@ -405,14 +433,7 @@ class TarotCards:
                 else:
                     Mouse.click(*next_pos)
                 time.sleep(1.0)
-            if self.level < 3:
-                card_corner = Image.open("tarot/back1.png")
-            elif self.level < 5:
-                card_corner = Image.open("tarot/back3.png")
-            elif self.level < 8:
-                card_corner = Image.open("tarot/back5.png")
-            else:
-                card_corner = Image.open("tarot/back8.png")
+            card_corner = self.get_image_back_corner()
             # Adjust card positions.
             screengrab = ImageGrab.grab()
             timeout = time.time() + 6.0
