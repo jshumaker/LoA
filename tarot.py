@@ -573,7 +573,7 @@ class TarotCards:
             if max_flips > self.flips_left:
                 logging.warning("Not enough flips remaining. Bad case flips for next level: {0}".format(max_flips))
                 print("How do you wish to proceed?")
-                print("1: Continue play using only free flips, leaving extras to carry over.")
+                print("1: Continue play using only free flips, leaving extras to carry over. Only works if started play from level 1")
                 print("2: Use all remaining flips.")
                 print("3: Exit.")
                 if not args.force:
@@ -584,6 +584,9 @@ class TarotCards:
                         answer = int(answer)
                     if answer == 1:
                         self.freeflipsonly = True
+                        if self.freeflips == 0:
+                            logging.error("No free flips available. Play most likely did not start at level 1.")
+                            sys.exit(1)
                     if answer == 1 or answer == 2:
                         Mouse.click(*self.safeclick)
                         time.sleep(0.1)
