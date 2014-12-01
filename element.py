@@ -21,10 +21,10 @@ How many upgrade attempts to do.
 parser.add_argument('--ignore1', action='store_true', help="""
 Ignore row 1.
 """)
-parser.add_argument('--ignore1', action='store_true', help="""
+parser.add_argument('--ignore2', action='store_true', help="""
 Ignore row 2.
 """)
-parser.add_argument('--ignore1', action='store_true', help="""
+parser.add_argument('--ignore3', action='store_true', help="""
 Ignore row 3.
 """)
 parser.add_argument('--debug', action='store_true', help="""
