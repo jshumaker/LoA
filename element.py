@@ -18,6 +18,15 @@ parser = argparse.ArgumentParser(description='Automatically spend elemental ston
 parser.add_argument('attempts', type=int, help="""
 How many upgrade attempts to do.
 """)
+parser.add_argument('--ignore1', action='store_true', help="""
+Ignore row 1.
+""")
+parser.add_argument('--ignore1', action='store_true', help="""
+Ignore row 2.
+""")
+parser.add_argument('--ignore1', action='store_true', help="""
+Ignore row 3.
+""")
 parser.add_argument('--debug', action='store_true', help="""
 Enable debug mode, a element.log file will be output with extra details.
 """)
@@ -58,11 +67,13 @@ upgrade_pos = (upgrade_pos[0] + int(upgrade_image.size[0] / 2), upgrade_pos[1] +
 # Save button position offset from that.
 save_pos = (upgrade_pos[0] + 139, upgrade_pos[1])
 
-digit_positions = [
-    (game_center[0] + 387, game_center[1] + 55),
-    (game_center[0] + 387, game_center[1] + 80),
-    (game_center[0] + 387, game_center[1] + 107)
-]
+digit_positions = []
+if not args.ignore1:
+    digit_positions.append((game_center[0] + 387, game_center[1] + 55))
+if not args.ignore2:
+    digit_positions.append((game_center[0] + 387, game_center[1] + 80))
+if not args.ignore3:
+    digit_positions.append((game_center[0] + 387, game_center[1] + 107))
 
 digit_size = (14, 12)
 
