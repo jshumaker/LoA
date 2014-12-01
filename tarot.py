@@ -568,12 +568,15 @@ class TarotCards:
         self.extraflips = 0
         if self.level == 0:
             self.freeflips = 15
+        else:
+            self.freeflips = flips_gained[self.level - 1]
         while self.level < len(card_positions):
             max_flips = int(len(card_positions[self.level]) * 1.75)
             if max_flips > self.flips_left:
                 logging.warning("Not enough flips remaining. Bad case flips for next level: {0}".format(max_flips))
                 print("How do you wish to proceed?")
-                print("1: Continue play using only free flips, leaving extras to carry over. Only works if started play from level 1")
+                print("1: Continue play using only free flips, leaving extras to carry over. ")
+                print("   Note: Spare flips from levels before the script started are not counted.")
                 print("2: Use all remaining flips.")
                 print("3: Exit.")
                 if not args.force:
