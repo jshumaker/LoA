@@ -584,7 +584,7 @@ class TarotCards:
                         answer = int(answer)
                     if answer == 1:
                         self.freeflipsonly = True
-                        if self.freeflips == 0:
+                        if self.freeflips <= 0:
                             logging.error("No free flips available. Play most likely did not start at level 1.")
                             sys.exit(1)
                     if answer == 1 or answer == 2:
