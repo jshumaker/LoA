@@ -577,7 +577,11 @@ class TarotCards:
                 print("2: Use all remaining flips.")
                 print("3: Exit.")
                 if not args.force:
-                    answer = int(input("Choice [1]: "))
+                    answer = input("Choice [1]: ")
+                    if answer == '':
+                        answer = 1
+                    else:
+                        answer = int(answer)
                     if answer == 1:
                         self.freeflipsonly = True
                     if answer == 1 or answer == 2:
