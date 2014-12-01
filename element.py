@@ -94,7 +94,7 @@ for i in range(1, args.attempts + 1):
     # Click Upgrade.
     Mouse.click(*upgrade_pos)
     time.sleep(0.050)
-    timeout = time.time() + 5.0
+    timeout = time.time() + 10.0
     while time.time() < timeout and not Mouse.cursor_is_hand(upgrade_pos):
         time.sleep(0.050)
     if time.time() > timeout:
@@ -102,7 +102,7 @@ for i in range(1, args.attempts + 1):
         sys.exit(1)
     time.sleep(0.150)
     # Get the digit values.
-    timeout = time.time() + 5.0
+    timeout = time.time() + 8.0
     failure = False
     while time.time() < timeout:
         digit_total = 0
@@ -119,6 +119,9 @@ for i in range(1, args.attempts + 1):
             digit_total += int(name)
         if not failure:
             break
+    if time.time() > timeout:
+        logging.error("Failed to recognize the digits.")
+        sys.exit(1)
     if digit_total > 0:
         Mouse.click(*save_pos)
         time.sleep(0.050)
