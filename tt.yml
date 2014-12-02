@@ -1,10 +1,10 @@
 teams:
     moo:
-        - Corn
+        - Xyern
         - Kirya
+        - Corn
         - Shep
         - Tiver
-        - Xyern
     bluewaffle:
         - Ninja_Mage
         - Trinty
@@ -12,13 +12,37 @@ teams:
         - Knut
         - Limitless
     TeamName:
-        - Salem
+        - Jacquelyn
         - rumba
         - kamy5
-        - Jacquelyn
+        - Salem
         - Lezard
+    Afterlife:
+        - Hero
+        - Mars_Demo
+        - Vhal
+        - PunShaFern
+        - JackNg
+    ekimichi7:
+        - Randy
+        - Serra
+        - Rebellion
+        - Inuwashi
+        - AMichael3343
 players:
     Tiver:
+        # ekimichi7
+        Inuwashi: false
+        AMichael3343: false
+        Randy: true
+        Serra: true
+        Rebellion: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: true
+        JackNg: true
+        PunShaFern: true
         # TeamName
         Salem: false
         rumba: true
@@ -55,12 +79,6 @@ players:
         ssone: true
         Dowik: true
         HOALINH: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: false
-        Vhal: true
-        JackNg: true
-        Manapause: true
         # VintageAlpha
         Zalaxa: false
         Zyna: true
@@ -77,6 +95,18 @@ players:
         EyeCandy: false
         Hoke: true
     Xyern:
+        # ekimichi7
+        Inuwashi: false
+        AMichael3343: true
+        Randy: true
+        Serra: true
+        Rebellion: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: true
+        Vhal: true
+        JackNg: true
+        PunShaFern: true
         # TeamName
         Salem: true
         rumba: true
@@ -113,12 +143,6 @@ players:
         ssone: true
         Dowik: true
         HOALINH: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: true
-        Vhal: true
-        JackNg: true
-        Manapause: true
         # VintageAlpha
         Zalaxa: false
         Zyna: true
@@ -132,6 +156,18 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Shep:
+        # ekimichi7
+        Inuwashi: false
+        AMichael3343: true
+        Randy: true
+        Serra: true
+        Rebellion: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: true
+        Vhal: true
+        JackNg: true
+        PunShaFern: true
         # TeamName
         Salem: true
         rumba: true
@@ -168,12 +204,6 @@ players:
         ssone: true
         Dowik: true
         HOALINH: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: false
-        Vhal: true
-        JackNg: true
-        Manapause: true
         # VintageAlpha
         Zalaxa: false
         Zyna: false
@@ -187,6 +217,18 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Kirya:
+        # ekimichi7
+        Inuwashi: false
+        AMichael3343: false
+        Randy: false
+        Serra: true
+        Rebellion: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: false
+        JackNg: false
+        PunShaFern: true
         # TeamName
         Salem: false
         rumba: true
@@ -223,12 +265,6 @@ players:
         ssone: false
         Dowik: true
         HOALINH: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: false
-        Vhal: false
-        JackNg: false
-        Manapause: true
         # VintageAlpha
         Zalaxa: false
         Zyna: false
@@ -242,6 +278,18 @@ players:
         Obiwoncanoli: true 
         Melky: true
     Corn:
+        # ekimichi7
+        Inuwashi: false
+        AMichael3343: false
+        Randy: false
+        Serra: true
+        Rebellion: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: false
+        Vhal: false
+        JackNg: false
+        PunShaFern: true
         # TeamName
         Salem: false
         rumba: true
@@ -278,12 +326,6 @@ players:
         ssone: false
         Dowik: true
         HOALINH: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: false
-        Vhal: false
-        JackNg: false
-        Manapause: false
         # VintageAlpha
         Zalaxa: false
         Zyna: false
