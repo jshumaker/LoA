@@ -18,15 +18,12 @@ parser = argparse.ArgumentParser(description='Automatically spend elemental ston
 parser.add_argument('attempts', type=int, help="""
 How many upgrade attempts to do.
 """)
-parser.add_argument('--ignore1', action='store_true', help="""
-Ignore row 1.
-""")
-parser.add_argument('--ignore2', action='store_true', help="""
-Ignore row 2.
-""")
-parser.add_argument('--ignore3', action='store_true', help="""
-Ignore row 3.
-""")
+parser.add_argument('--favor1', action='store_true', help="Favor row 1.")
+parser.add_argument('--favor2', action='store_true', help="Favor row 2.")
+parser.add_argument('--favor3', action='store_true', help="Favor row 3.")
+parser.add_argument('--ignore1', action='store_true', help="Ignore row 1.")
+parser.add_argument('--ignore2', action='store_true', help="Ignore row 2.")
+parser.add_argument('--ignore3', action='store_true', help="Ignore row 3.")
 parser.add_argument('--debug', action='store_true', help="""
 Enable debug mode, a element.log file will be output with extra details.
 """)
@@ -67,13 +64,11 @@ upgrade_pos = (upgrade_pos[0] + int(upgrade_image.size[0] / 2), upgrade_pos[1] +
 # Save button position offset from that.
 save_pos = (upgrade_pos[0] + 139, upgrade_pos[1])
 
-digit_positions = []
-if not args.ignore1:
-    digit_positions.append((game_center[0] + 387, game_center[1] + 55))
-if not args.ignore2:
-    digit_positions.append((game_center[0] + 387, game_center[1] + 80))
-if not args.ignore3:
-    digit_positions.append((game_center[0] + 387, game_center[1] + 107))
+digit_positions = [
+    ((game_center[0] + 387, game_center[1] + 55), args.ignore1, args.favor1),
+    ((game_center[0] + 387, game_center[1] + 80), args.ignore2, args.favor2),
+    ((game_center[0] + 387, game_center[1] + 107), args.ignore3, args.favor3)
+]
 
 digit_size = (14, 12)
 
@@ -89,6 +84,19 @@ for file in glob.glob(globstring):
 
 
 total_upgrade = 0
+
+
+def save():
+    Mouse.click(*save_pos)
+    time.sleep(0.050)
+    timeout = time.time() + 5.0
+    while time.time() < timeout and Mouse.cursor_is_hand(save_pos):
+        time.sleep(0.050)
+        Mouse.click(*save_pos)
+    time.sleep(0.100)
+    if Mouse.cursor_is_hand(save_pos):
+        logging.error("Error while waiting for save button to respond.")
+        sys.exit(1)
 
 for i in range(1, args.attempts + 1):
     # Click Upgrade.
@@ -107,7 +115,10 @@ for i in range(1, args.attempts + 1):
     while time.time() < timeout:
         digit_total = 0
         screengrab = ImageGrab.grab()
-        for pos in digit_positions:
+        digit_values = []
+        for pos, ignore, favor in digit_positions:
+            if ignore:
+                continue
             name, x, y = detect_image(screengrab, digits, *pos, radius=3)
             if name is None:
                 logging.debug("Failed to recognize digit, retrying in 100ms.")
@@ -115,7 +126,7 @@ for i in range(1, args.attempts + 1):
                 failure = True
                 break
             logging.log(VERBOSE, "Recognized digit: {0} Offset: {1}, {2}".format(name, x - pos[0], y - pos[1]))
-
+            digit_values.append((int(name), favor))
             digit_total += int(name)
         if not failure:
             break
@@ -123,19 +134,18 @@ for i in range(1, args.attempts + 1):
         logging.error("Failed to recognize the digits.")
         sys.exit(1)
     if digit_total > 0:
-        Mouse.click(*save_pos)
-        time.sleep(0.050)
-        timeout = time.time() + 5.0
-        while time.time() < timeout and Mouse.cursor_is_hand(save_pos):
-            time.sleep(0.050)
-            Mouse.click(*save_pos)
-        time.sleep(0.100)
-        if Mouse.cursor_is_hand(save_pos):
-            logging.error("Error while waiting for save button to respond.")
-            sys.exit(1)
+        save()
         total_upgrade += digit_total
         logging.info("Gained {0} levels, {1} total, {2} per attempt.".format(
             digit_total, total_upgrade, total_upgrade / i))
+    elif digit_total == 0:
+        shift = False
+        for value, favor in digit_values:
+            if favor and value > 0:
+                logging.info("Shifting points into favored row.")
+                shift = True
+        if shift:
+            save()
 
 
 logging.info("Total Gained Levels: {0}, {1} per attempt.".format(
