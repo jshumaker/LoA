@@ -123,6 +123,7 @@ def get_game_window(auto=False):
     # Make this window active.
     win32gui.SetWindowPos(game_hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
                           win32con.SWP_NOMOVE + win32con.SWP_NOSIZE + win32con.SWP_SHOWWINDOW)
+    win32gui.SetForegroundWindow(game_hwnd)
     time.sleep(0.050)
 
     screengrab = ImageGrab.grab()
