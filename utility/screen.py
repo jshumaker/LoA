@@ -75,7 +75,7 @@ def compare_images(i1, i2):
     return rms
 
 
-def get_game_window():
+def get_game_window(auto=False):
     game_hwnd = None
 
     windows = []
@@ -93,7 +93,7 @@ def get_game_window():
     if len(windows) == 0:
         logging.error("Failed to find game window.")
         sys.exit(1)
-    elif len(windows) > 1:
+    elif len(windows) > 1 and not auto:
         print("Found {0} possible game windows.".format(len(windows)))
         for i in range(1, len(windows) + 1):
             print("{0}: {1}".format(i, windows[i-1][1]))
