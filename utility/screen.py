@@ -5,6 +5,7 @@ import sys
 import logging
 import win32gui
 import win32con
+import win32com.client
 from ctypes import *
 from PIL import ImageGrab, Image
 import time
@@ -107,11 +108,15 @@ def get_game_window(auto=False):
     else:
         game_hwnd = windows[0][0]
 
+    # Ugly hack to let us set foreground window.
+    shell = win32com.client.Dispatch("WScript.Shell")
+    shell.SendKeys('%')
+
     # Make this window active.
     win32gui.SetWindowPos(game_hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
                           win32con.SWP_NOMOVE + win32con.SWP_NOSIZE + win32con.SWP_SHOWWINDOW)
-    win32gui.ShowWindow(game_hwnd, win32con.SW_RESTORE)
     win32gui.SetForegroundWindow(game_hwnd)
+    win32gui.ShowWindow(game_hwnd, win32con.SW_RESTORE)
     time.sleep(0.050)
 
     windowleft, windowtop, windowright, windowbottom = win32gui.GetWindowRect(game_hwnd)
