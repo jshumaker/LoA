@@ -107,6 +107,13 @@ def get_game_window(auto=False):
     else:
         game_hwnd = windows[0][0]
 
+    # Make this window active.
+    win32gui.SetWindowPos(game_hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
+                          win32con.SWP_NOMOVE + win32con.SWP_NOSIZE + win32con.SWP_SHOWWINDOW)
+    win32gui.ShowWindow(game_hwnd, win32con.SW_RESTORE)
+    win32gui.SetForegroundWindow(game_hwnd)
+    time.sleep(0.050)
+
     windowleft, windowtop, windowright, windowbottom = win32gui.GetWindowRect(game_hwnd)
     clientleft, clienttop, clientright, clientbottom = win32gui.GetClientRect(game_hwnd)
     logging.debug("Window position: {},{},{},{}".format(windowleft, windowtop, windowright, windowbottom))
@@ -119,12 +126,6 @@ def get_game_window(auto=False):
     top = -1
     left = -1
     right, bottom = win32gui.ClientToScreen(game_hwnd, (clientright, clientbottom))
-
-    # Make this window active.
-    win32gui.SetWindowPos(game_hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
-                          win32con.SWP_NOMOVE + win32con.SWP_NOSIZE + win32con.SWP_SHOWWINDOW)
-    win32gui.SetForegroundWindow(game_hwnd)
-    time.sleep(0.050)
 
     screengrab = ImageGrab.grab()
     # Let's find the left edge
