@@ -1,10 +1,18 @@
 import argparse
 from grid import *
 from utility.logconfig import *
+from utility.mouse import *
 import logging
 
 
 class Board(Grid):
+    def set_grid_pos(self):
+        self.xoffset = self.game_center[0] - 269
+        self.yoffset = self.game_center[1] - 155
+
+    def set_energy_pos(self):
+        self.energy_pos = (self.game_center[0] - 356, self.game_center[1] - 257)
+
     def clear(self, probabilitypoints=True):
         """
         Mark gems as cleared and count points.
@@ -59,7 +67,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Automatically play LoA Gemology')
     parser.add_argument('--energy', '-e', type=int, default=-1, help="""
-    Remaining energy. If not specified then will be prompted.
+    Remaining energy. Default is to auto detect.
+    """)
+    parser.add_argument('--both', '-b', action='store_true', help="""
+    Play both regular and advanced gemology. Forces auto energy detection.
     """)
     parser.add_argument('--processes', '-p', type=int, default=-1, help="""
     How many processes to spin up for multiprocessing. Defaults to cpu count.
@@ -84,6 +95,12 @@ if __name__ == '__main__':
     """)
     args = parser.parse_args()
 
+    loglevel = VERBOSE
+    if args.debug:
+        loglevel = logging.DEBUG
+
+    logconfig('gemology', loglevel)
+
     if args.debug:
         logging.info("Enabling debug mode.")
         Grid.debug = True
@@ -101,31 +118,25 @@ if __name__ == '__main__':
             board.simulate_play(args.depth)
         else:
             board.simulate_play(args.depth, args.energy)
-
-    loglevel = VERBOSE
-    if args.debug:
-        loglevel = logging.DEBUG
-
-    logconfig('gemology', loglevel)
-
-    if args.energy > 0:
-        remaining_energy = args.energy
+    if args.both:
+        board = Board(depth=args.depth, processes=args.processes)
+        # Regular.
+        Mouse.click(board.xoffset - 146, board.yoffset - 10)
+        time.sleep(1.000)
+        board.update()
+        logging.info("The regular starting grid appears to be:")
+        board.print_grid()
+        board.play(-1, depth=args.depth)
+        # Advanced
+        Mouse.click(board.xoffset - 146, board.yoffset + 60)
+        time.sleep(1.000)
+        board.update()
+        logging.info("The advanced starting grid appears to be:")
+        board.print_grid()
+        board.play(-1, depth=args.depth)
     else:
-        remaining_energy = int(input("How much gemology energy remain: "))
+        board = Board(depth=args.depth, processes=args.processes)
+        logging.info("The starting grid appears to be:")
+        board.print_grid()
 
-    game_window = get_game_window()
-    game_center = (int((game_window[2] - game_window[0]) / 2) + game_window[0],
-                   int((game_window[3] - game_window[1]) / 2) + game_window[1])
-
-    # Give the game focus.
-    safe_click_pos = (max(0, game_window[0] - 1), max(0, game_window[1]))
-    Mouse.click(*safe_click_pos)
-
-    xoffset = game_center[0] - 269
-    yoffset = game_center[1] - 155
-
-    board = Board(xoffset, yoffset, depth=args.depth, processes=args.processes)
-    logging.info("The starting grid appears to be:")
-    board.print_grid()
-
-    board.play(remaining_energy, depth=args.depth)
+        board.play(args.energy, depth=args.depth)

@@ -42,6 +42,8 @@ def calibrate_colors():
 
         logging.info(", ".join([str(color) for color in row]))
 
+depth_factor = 0.75
+
 
 class Move:
     """
@@ -59,7 +61,7 @@ class Move:
         self.points = 0
         self.submove = None
 
-    def get_total_points(self, depth_factor=0.75):
+    def get_total_points(self):
         if self.submove is None:
             return self.points
         else:
@@ -105,10 +107,15 @@ class Grid:
     # Special type for unknown grid items.
     GridItemTypeUnknown = GridItemType('Unknown', None)
 
-    def __init__(self, xoffset, yoffset, grid=None, depth=3, processes=-1):
+    def __init__(self, grid=None, depth=3, processes=-1):
         self.cleared = None
         self.depth = depth
         self.grid = None
+        self.game_window = None
+        self.game_center = None
+        self.xoffset = None
+        self.yoffset = None
+        self.energy_pos = None
         if processes == -1:
             self.processes = cpu_count()
         else:
@@ -116,15 +123,39 @@ class Grid:
 
         self.selected_image = Image.open('grid/selected.png')
 
+        logging.info("Loading digits...")
+        self.digits = []
+        scriptdir = os.path.dirname(os.path.realpath(__file__))
+        globstring = os.path.join(scriptdir, "grid/digits/*.png")
+        for file in glob.glob(globstring):
+            name = os.path.basename(file)
+            name, ext = os.path.splitext(name)
+            self.digits.append((name, Image.open(file)))
+            logging.log(VERBOSE, "Loaded digit: {0}".format(name))
+
         if grid is None:
+            self.game_window = get_game_window()
+            self.game_center = (int((self.game_window[2] - self.game_window[0]) / 2) + self.game_window[0],
+                                int((self.game_window[3] - self.game_window[1]) / 2) + self.game_window[1])
+
+            # Give the game focus.
+            safe_click_pos = (max(0, self.game_window[0] - 1), max(0, self.game_window[1]))
+            Mouse.click(*safe_click_pos)
+
+            self.set_grid_pos()
+
+            #Move the mouse away
+            win32api.SetCursorPos((self.xoffset - 50, self.yoffset - 50))
+            time.sleep(0.050)
             screengrab = ImageGrab.grab()
 
             # Let's try to adjust the offsets to see if there's a more accurate position.
             logging.info("Searching for good reference point...")
-            griditem, best_accuracy = guess_grid_item(get_avg_pixel(screengrab, xoffset, yoffset))
-            best_x = xoffset
-            best_y = yoffset
-            for posx, posy in search_offset(radius=15, offsetx=xoffset, offsety=yoffset):
+            logging.log(VERBOSE, "Searching around {0},{1}".format(self.xoffset, self.yoffset))
+            griditem, best_accuracy = guess_grid_item(get_avg_pixel(screengrab, self.xoffset, self.yoffset))
+            best_x = self.xoffset
+            best_y = self.yoffset
+            for posx, posy in search_offset(radius=5, offsetx=self.xoffset, offsety=self.yoffset):
                 griditem, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
                 if accuracy > best_accuracy:
                     best_accuracy = accuracy
@@ -133,11 +164,9 @@ class Grid:
                 if best_accuracy > 0.99:
                     break
 
-            xoffset = best_x
-            yoffset = best_y
-
-            self.xoffset = xoffset
-            self.yoffset = yoffset
+            self.xoffset = best_x
+            self.yoffset = best_y
+            logging.log(VERBOSE, "Centered on {0},{1}, item {2}".format(self.xoffset, self.yoffset, griditem.name))
 
             if not self.update():
                 logging.error("Initial accuracy of board recognition is too low.")
@@ -145,8 +174,15 @@ class Grid:
         else:
             #Use the supplied grid.
             self.grid = grid
-            self.xoffset = xoffset
-            self.yoffset = yoffset
+
+    def set_grid_pos(self):
+        self.xoffset = None
+        self.yoffset = None
+        raise Exception("set_grid_pos must be overridden.")
+
+    def set_energy_pos(self):
+        self.energy_pos = (0, 0)
+        raise Exception("set_energy_pos must be overridden.")
 
     def copy_grid(self):
         """
@@ -179,7 +215,8 @@ class Grid:
                     item_changed = True
             newgrid.append(column)
 
-        if lowest_accuracy < 0.60:
+        if lowest_accuracy < 0.58:
+            logging.log(VERBOSE, "Lowest accuracy too low: {0}".format(lowest_accuracy))
             return False
         if compareprevious and not item_changed:
             logging.warning("Grid did not change.")
@@ -500,7 +537,43 @@ class Grid:
                     else:
                         points = -1
 
+    def parse_energy(self):
+        energy = 0
+        # Find the first digit.
+        screengrab = ImageGrab.grab()
+        self.set_energy_pos()
+
+        logging.log(VERBOSE, "Searching for first digit at offset {0},{1}".format(*self.energy_pos))
+        name, digit_posx, digit_posy = detect_image(screengrab, self.digits, *self.energy_pos,
+                                                    yradius=2, xradius=40, algorithm=SEARCH_LEFT_TO_RIGHT,
+                                                    threshold=7440)
+
+        if name is None:
+            logging.error("Failed to find first energy digit.")
+            sys.exit(1)
+        logging.log(VERBOSE, "Found first energy digit {0}, at offset {1},{2}".format(name,
+                    digit_posx - self.energy_pos[0], digit_posy - self.energy_pos[1]))
+
+        while name is not None:
+            energy = energy * 10 + int(name)
+            lastx = digit_posx
+            lasty = digit_posy
+            name, digit_posx, digit_posy = detect_image(screengrab, self.digits, digit_posx + 25, digit_posy,
+                                                        yradius=0, xradius=6, algorithm=SEARCH_LEFT_TO_RIGHT,
+                                                        threshold=7440)
+            if name is not None:
+                logging.log(VERBOSE, "Found energy digit {0}, at {1},{2}".format(name,
+                            digit_posx - lastx, digit_posy - lasty))
+        return energy
+
     def play(self, remaining_energy, depth=2):
+        if remaining_energy < 0:
+            logging.info("Parsing energy remaining...")
+            remaining_energy = self.parse_energy()
+            logging.info("{0} energy remaining.".format(remaining_energy))
+            if remaining_energy == 0:
+                return
+
         startime = time.time()
         startenergy = remaining_energy
         while remaining_energy > 0:

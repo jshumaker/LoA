@@ -14,6 +14,14 @@ class Board(Grid):
     # Bonus points to give for higher counts cleared. Increase to favor higher numbers of gems cleared.
     count_factor = 0.0
 
+    def set_grid_pos(self):
+        self.xoffset = self.game_center[0] - 116
+        self.yoffset = self.game_window[3] - 330
+
+    def set_energy_pos(self):
+        self.energy_pos = (self.game_center[0] - 220,
+                           self.game_window[3] - 114)
+
     def update(self, compareprevious=False):
         # Move the mouse out of the way so tooltip isn't there.
         win32api.SetCursorPos((self.xoffset - 50, self.yoffset - 50))
@@ -116,6 +124,11 @@ if __name__ == '__main__':
     """)
     args = parser.parse_args()
 
+    loglevel = VERBOSE
+    if args.debug:
+        loglevel = logging.DEBUG
+    logconfig('dragonsoul', loglevel)
+
     if args.debug:
         logging.info("Enabling debug mode.")
         Grid.debug = True
@@ -155,35 +168,9 @@ if __name__ == '__main__':
         else:
             board.simulate_play(args.depth, args.energy)
 
-    loglevel = VERBOSE
-    if args.debug:
-        loglevel = logging.DEBUG
-    logconfig('dragonsoul', loglevel)
+    board = Board(depth=args.depth, processes=args.processes)
 
-    if args.energy > 0:
-        remaining_energy = args.energy
-    else:
-        remaining_energy = int(input("How much dragon soul energy remain: "))
-
-    game_window = get_game_window()
-    game_center = (int((game_window[2] - game_window[0]) / 2) + game_window[0],
-                   int((game_window[3] - game_window[1]) / 2) + game_window[1])
-
-    if game_window[3] - game_window[1] < 508:
-        logging.error("Game window is too short, please size it so none of the bottom is clipped.")
-        sys.exit(1)
-
-    # Give the game focus.
-    safe_click_pos = (max(0, game_window[0] - 1), max(0, game_window[1]))
-    Mouse.click(*safe_click_pos)
-
-    xoffset = game_center[0] - 116
-    yoffset = game_window[3] - 329
-
-    #Move the mouse away
-    win32api.SetCursorPos((xoffset - 50, yoffset - 50))
-    board = Board(xoffset, yoffset, depth=args.depth, processes=args.processes)
     logging.info("The starting grid appears to be:")
     board.print_grid()
 
-    board.play(remaining_energy, depth=args.depth)
+    board.play(args.energy, depth=args.depth)

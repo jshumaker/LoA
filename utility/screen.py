@@ -63,8 +63,11 @@ def compare_images(i1, i2):
     width, height = i1.size
     for x in range(width):
         for y in range(height):
-            pixel1 = i1.getpixel((x, y))
             pixel2 = i2.getpixel((x, y))
+            # Skip if fully transparent.
+            if len(pixel2) > 3 and pixel2[3] == 0:
+                continue
+            pixel1 = i1.getpixel((x, y))
 
             pixel_rms = math.sqrt((pixel1[0] - pixel2[0])**2 + (pixel1[1] - pixel2[1])**2 + (pixel1[2] - pixel2[2])**2)
             if len(pixel2) > 3:
@@ -77,8 +80,6 @@ def compare_images(i1, i2):
 
 
 def get_game_window(auto=False):
-    game_hwnd = None
-
     windows = []
 
     def foreach_window(hwnd, lParam):
@@ -161,10 +162,13 @@ def get_game_window(auto=False):
 
     # TODO: Figure out right and bottom better, currently it's frequently off by several pixels.
 
+    logging.debug("Game position: {},{},{},{}".format(left, top, right, bottom))
     return left, top, right, bottom
 
+SEARCH_SPIRAL = 1
+SEARCH_LEFT_TO_RIGHT = 2
 
-def search_offset(radius=2, offsetx=0, offsety=0):
+def search_offset(radius=2, offsetx=0, offsety=0, xradius=None, yradius=None, algorithm=SEARCH_SPIRAL):
     """
     :param radius: Search radius, max distance from 0,0 to generate a point from. Defaults to 2, which will generate
      a -2, -2 to 2, 2 search pattern spiraling out from center.
@@ -172,14 +176,30 @@ def search_offset(radius=2, offsetx=0, offsety=0):
     :offsetx: amount to offset returned x by.
     :offsety: amount to offset returned x by.
     """
-    x = y = 0
-    dx = 0
-    dy = -1
-    for i in range((radius*2 + 1)**2):
-        yield (x + offsetx, y + offsety)
-        if x == y or (x < 0 and x == -y) or (x > 0 and x == 1-y):
-            dx, dy = -dy, dx
-        x, y = x+dx, y+dy
+    if xradius is None:
+        xradius = radius
+    elif xradius > radius:
+        radius = xradius
+    if yradius is None:
+        yradius = radius
+    elif yradius > radius:
+        radius = yradius
+    if algorithm == SEARCH_SPIRAL:
+        x = y = 0
+        dx = 0
+        dy = -1
+        for i in range((radius*2 + 1)**2):
+            if abs(x) <= xradius and abs(y) <= yradius:
+                yield (x + offsetx, y + offsety)
+            if x == y or (x < 0 and x == -y) or (x > 0 and x == 1-y):
+                dx, dy = -dy, dx
+            x, y = x+dx, y+dy
+    elif algorithm == SEARCH_LEFT_TO_RIGHT:
+        for x in range(0 - xradius, xradius + 1):
+            for y in range(0 - yradius, yradius + 1):
+                yield (x + offsetx, y + offsety)
+    else:
+        raise ArgumentError("Invalid search algorithm specified.")
 
 
 def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, great_threshold=None):
@@ -218,7 +238,8 @@ def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, 
     return best_x, best_y
 
 
-def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=2, great_threshold=None):
+def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=2, great_threshold=None,
+                 xradius=None, yradius=None, algorithm=SEARCH_SPIRAL):
     """
     Detect an image from a screengrab from among a set of images.
     :param screengrab:
@@ -243,7 +264,8 @@ def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=
     best_x = -1
     best_y = -1
     best_name = None
-    for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy):
+    for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy,
+                              xradius=xradius, yradius=yradius, algorithm=algorithm):
         for name, image in imageset:
             image_width, image_height = image.size
             rms = compare_images(screengrab.crop((x, y, x + image_width, y + image_height)), image)
