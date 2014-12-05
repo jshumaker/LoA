@@ -93,7 +93,7 @@ def save():
     while time.time() < timeout and Mouse.cursor_is_hand(save_pos):
         time.sleep(0.050)
         Mouse.click(*save_pos)
-    time.sleep(0.100)
+    time.sleep(0.500)
     if Mouse.cursor_is_hand(save_pos):
         logging.error("Error while waiting for save button to respond.")
         sys.exit(1)
