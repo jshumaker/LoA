@@ -20,7 +20,7 @@ class Board(Grid):
 
     def set_energy_pos(self):
         self.energy_pos = (self.game_center[0] - 220,
-                           self.game_window[3] - 114)
+                           self.game_window[3] - 112)
 
     def update(self, compareprevious=False):
         # Move the mouse out of the way so tooltip isn't there.
