@@ -286,25 +286,17 @@ class TarotCards:
 
     def parse_level(self):
         logging.log(VERBOSE, "Parsing level...")
-        value = 0
+        value = -1
+        screengrab = ImageGrab.grab()
         for x in range(2):
-            for posx, posy in search_offset(offsetx=level_offsetx + self.gamepos[0],
-                                            offsety=level_offsety + self.gamepos[1]):
-                digit_pos = (posx + (x * digit_width),
-                             posy,
-                             posx + (x * digit_width) + digit_width - 1,
-                             posy + digit_height - 1)
-                digit_image = ImageGrab.grab(digit_pos)
-                digit_value = self.match_digit(digit_image)
-                if digit_value is not None:
-                    logging.log(VERBOSE, "Digit found, offset from expected: {0},{1}".format(
-                        posx - level_offsetx - self.gamepos[0],
-                        posy - level_offsety - self.gamepos[1]
-                    ))
-                    break
+            digit_value, digit_posx, digit_posy = detect_image(
+                screengrab, self.digits, level_offsetx + self.gamepos[0] + (x * digit_width),
+                level_offsety + self.gamepos[1])
             if digit_value is not None and digit_value != 'end':
-                value = value * 10 + int(digit_value)
-            digit_image.close()
+                if value == -1:
+                    value = int(digit_value)
+                else:
+                    value = value * 10 + int(digit_value)
         return value
 
     def flip_card(self, cardnum, detect=False, fliptimeout=12.1, clicktimeout=1.0):
