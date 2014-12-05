@@ -5,6 +5,7 @@ import sys
 import logging
 import win32gui
 import win32con
+import win32ui
 import win32com.client
 from ctypes import *
 from PIL import ImageGrab, Image
@@ -160,7 +161,14 @@ def get_game_window(auto=False):
         logging.debug("Pixels were black to 0, assuming full screen.")
         top = 0
 
-    # TODO: Figure out right and bottom better, currently it's frequently off by several pixels.
+    # Let's find the bottom edge
+    for y in range(bottom - 20, bottom, +1):
+        p = screengrab.getpixel((left - 1, y))
+        if p[0] != 0 or p[1] != 0 or p[2] != 0:
+            bottom = y
+            break
+
+    # TODO: Figure out right , currently it's frequently off by several pixels for chrome.
 
     logging.debug("Game position: {},{},{},{}".format(left, top, right, bottom))
     return left, top, right, bottom
