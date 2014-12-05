@@ -18,7 +18,8 @@ def logconfig(name, loglevel):
     # Rotate logs and create new filename.
     if not os.path.exists('log'):
         os.mkdir('log')
-    logfilename = 'log/{0}_{1}.log'.format(name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    logfilename = script_dir + '/../log/{0}_{1}.log'.format(name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # create file handler which logs even debug messages
     fh = logging.FileHandler(logfilename, mode='w')
@@ -35,7 +36,7 @@ def logconfig(name, loglevel):
     logger.addHandler(ch)
 
     # Trim old log files.
-    logfiles = sorted(glob.glob('log/{0}*.log'.format(name)), reverse=True)
+    logfiles = sorted(glob.glob(script_dir + '/../log/{0}*.log'.format(name)), reverse=True)
     if len(logfiles) > 5:
         for i in range(5, len(logfiles)):
             os.remove(logfiles[i])
