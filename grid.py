@@ -545,7 +545,7 @@ class Grid:
 
         logging.log(VERBOSE, "Searching for first digit at offset {0},{1}".format(*self.energy_pos))
         name, digit_posx, digit_posy = detect_image(screengrab, self.digits, *self.energy_pos,
-                                                    yradius=2, xradius=40, algorithm=SEARCH_LEFT_TO_RIGHT,
+                                                    yradius=1, xradius=40, algorithm=SEARCH_LEFT_TO_RIGHT,
                                                     threshold=7440)
 
         if name is None:
