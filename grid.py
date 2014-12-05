@@ -581,11 +581,11 @@ class Grid:
             while True:
                 if not self.update():
                     retry_count += 1
-                    if retry_count >= 10:
-                        logging.error("Failed to accurately update board 10 times. Giving up.")
+                    if retry_count >= 20:
+                        logging.error("Failed to accurately update board 20 times. Giving up.")
                         sys.exit(1)
                     else:
-                        time.sleep(1.0)
+                        time.sleep(0.5)
                 else:
                     break
 
