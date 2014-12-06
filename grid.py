@@ -532,10 +532,15 @@ class Grid:
         screengrab = ImageGrab.grab()
         self.set_energy_pos()
 
-        logging.log(VERBOSE, "Searching for first digit at offset {0},{1}".format(*self.energy_pos))
-        name, digit_posx, digit_posy = detect_image(screengrab, self.digits, *self.energy_pos,
-                                                    yradius=1, xradius=40, algorithm=SEARCH_LEFT_TO_RIGHT,
-                                                    threshold=7440)
+        # Offsets for 4, 3, 2, and 1 digits from position of 1 digit.
+        first_digit_offsets = [-43, -29, -15, 0]
+        for offset in first_digit_offsets:
+            logging.log(VERBOSE, "Searching for first digit at offset {0},{1}".format(*self.energy_pos))
+            name, digit_posx, digit_posy = detect_image(screengrab, self.digits,
+                                                        self.energy_pos[0] + offset, self.energy_pos[1],
+                                                        xradius=10, yradius=1, threshold=7440)
+            if digit_posx != -1:
+                break
 
         if name is None:
             logging.error("Failed to find first energy digit.")
@@ -547,8 +552,8 @@ class Grid:
             energy = energy * 10 + int(name)
             lastx = digit_posx
             lasty = digit_posy
-            name, digit_posx, digit_posy = detect_image(screengrab, self.digits, digit_posx + 25, digit_posy,
-                                                        yradius=0, xradius=6, algorithm=SEARCH_LEFT_TO_RIGHT,
+            name, digit_posx, digit_posy = detect_image(screengrab, self.digits, digit_posx + 28, digit_posy,
+                                                        yradius=0, xradius=4, algorithm=SEARCH_LEFT_TO_RIGHT,
                                                         threshold=7440)
             if name is not None:
                 logging.log(VERBOSE, "Found energy digit {0}, at {1},{2}".format(name,

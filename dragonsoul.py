@@ -16,11 +16,11 @@ class Board(Grid):
     count_factor = 0.0
 
     def set_grid_pos(self):
-        self.xoffset = self.game_center[0] - 115
+        self.xoffset = self.game_center[0] - 109
         self.yoffset = self.game_window[3] - 321
 
     def set_energy_pos(self):
-        self.energy_pos = (self.game_center[0] - 205,
+        self.energy_pos = (self.game_center[0] - 212,
                            self.game_window[3] - 112)
 
     def update(self, compareprevious=False):
