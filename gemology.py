@@ -4,14 +4,15 @@ from utility.logconfig import *
 from utility.mouse import *
 import logging
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 class Board(Grid):
     def set_grid_pos(self):
-        self.xoffset = self.game_center[0] - 269
-        self.yoffset = self.game_center[1] - 155
+        self.xoffset = self.game_center[0] - 265
+        self.yoffset = self.game_center[1] - 151
 
     def set_energy_pos(self):
-        self.energy_pos = (self.game_center[0] - 356, self.game_center[1] - 257)
+        self.energy_pos = (self.game_center[0] - 340, self.game_center[1] - 257)
 
     def clear(self, probabilitypoints=True):
         """
@@ -56,11 +57,11 @@ class Board(Grid):
         return points
 
 Grid.GridItemTypes = [
-    GridItemType('Red', Color(172, 30, 25, 0)),
-    GridItemType('Green', Color(54, 116, 37, 0)),
-    GridItemType('Blue', Color(41, 103, 180, 0)),
-    GridItemType('Purple', Color(126, 31, 167, 0)),
-    GridItemType('Yellow', Color(182, 129, 40, 0))
+    GridItemType('Red', script_dir + '/grid/gemology/Red.png'),
+    GridItemType('Green', script_dir + '/grid/gemology/Green.png'),
+    GridItemType('Blue', script_dir + '/grid/gemology/Blue.png'),
+    GridItemType('Purple', script_dir + '/grid/gemology/Purple.png'),
+    GridItemType('Yellow', script_dir + '/grid/gemology/Yellow.png')
 ]
 
 if __name__ == '__main__':
@@ -109,8 +110,7 @@ if __name__ == '__main__':
         Grid.fast0 = True
 
     if args.calibrate:
-        calibrate_colors()
-        sys.exit(0)
+        board = Board(calibrate=True)
 
     if args.simulate:
         board = Board(0, 0, [[None]*5]*5, depth=args.depth, processes=args.processes)

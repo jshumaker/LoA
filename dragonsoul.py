@@ -3,10 +3,11 @@ from grid import *
 from utility.logconfig import *
 import logging
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 class Element(GridItemType):
-    def __init__(self, name, color, factor):
-        GridItemType.__init__(self, name, color)
+    def __init__(self, name, image, factor):
+        GridItemType.__init__(self, name, image)
         self.factor = factor
 
 
@@ -15,11 +16,11 @@ class Board(Grid):
     count_factor = 0.0
 
     def set_grid_pos(self):
-        self.xoffset = self.game_center[0] - 116
-        self.yoffset = self.game_window[3] - 330
+        self.xoffset = self.game_center[0] - 115
+        self.yoffset = self.game_window[3] - 321
 
     def set_energy_pos(self):
-        self.energy_pos = (self.game_center[0] - 220,
+        self.energy_pos = (self.game_center[0] - 205,
                            self.game_window[3] - 112)
 
     def update(self, compareprevious=False):
@@ -65,11 +66,11 @@ class Board(Grid):
         return points
 
 Grid.GridItemTypes = [
-    Element('Wind', Color(109, 159, 46, 0), 1.0),
-    Element('Electro', Color(165, 119, 230, 0), 1.0),
-    Element('Ice', Color(61, 174, 210, 0), 1.0),
-    Element('Fire', Color(222, 158, 24, 0), 1.0),
-    Element('Random', Color(118, 81, 51, 0), 1.0)
+    Element('Wind', script_dir + '/grid/dragonsoul/Wind.png', 1.0),
+    Element('Electro', script_dir + '/grid/dragonsoul/Electro.png', 1.0),
+    Element('Ice', script_dir + '/grid/dragonsoul/Ice.png', 1.0),
+    Element('Fire', script_dir + '/grid/dragonsoul/Fire.png', 1.0),
+    Element('Random', script_dir + '/grid/dragonsoul/Random.png', 1.0)
 ]
 
 if __name__ == '__main__':
@@ -157,9 +158,7 @@ if __name__ == '__main__':
             element.factor = args.random
 
     if args.calibrate:
-        Mouse.get_cursor()
-        calibrate_colors()
-        sys.exit(0)
+        board = Board(calibrate=True)
 
     if args.simulate:
         board = Board(0, 0, [], depth=args.depth, processes=args.processes)

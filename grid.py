@@ -15,34 +15,10 @@ from PIL import ImageGrab
 from utility.mouse import *
 from utility.screen import *
 
-
-def guess_grid_item(pixel):
-    closest_amount = 0.0
-    closest_item = None
-    for griditemtype in Grid.GridItemTypes:
-        amount = griditemtype.color.compare(pixel)
-        if amount > closest_amount:
-            closest_amount = amount
-            closest_item = griditemtype
-    return closest_item, closest_amount
-
-
-def calibrate_colors():
-    input("Place mouse over center of top left gem and press enter.")
-    xoffset, yoffset = Mouse.get_position()
-    # Move the mouse away
-    win32api.SetCursorPos((xoffset - 50, yoffset - 50))
-    screengrab = ImageGrab.grab()
-    for y in range(5):
-        row = []
-        for x in range(5):
-            posx = xoffset + (x * 50)
-            posy = yoffset + (y * 50)
-            row.append(get_avg_pixel(screengrab, posx, posy))
-
-        logging.info(", ".join([str(color) for color in row]))
-
+# Adjustment factor for each level deep in move sequence.
 depth_factor = 0.75
+# Offset from center used for comparison.
+grid_compare_box = (-4, -4, 5, 5)
 
 
 class Move:
@@ -83,9 +59,12 @@ class Move:
 class GridItemType:
     count = 0
 
-    def __init__(self, name, color):
+    def __init__(self, name, image):
         self.name = name
-        self.color = color
+        if image is not None:
+            self.image = Image.open(image)
+        else:
+            self.image = None
         self.index = GridItemType.count
         GridItemType.count += 1
 
@@ -94,6 +73,9 @@ class GridItemType:
 
     def __eq__(self, other):
         return self.index == other.index
+
+    def __str__(self):
+        return self.name
 
 
 class Grid:
@@ -107,7 +89,7 @@ class Grid:
     # Special type for unknown grid items.
     GridItemTypeUnknown = GridItemType('Unknown', None)
 
-    def __init__(self, grid=None, depth=3, processes=-1):
+    def __init__(self, grid=None, depth=3, processes=-1, calibrate=False):
         self.cleared = None
         self.depth = depth
         self.grid = None
@@ -132,7 +114,6 @@ class Grid:
             name, ext = os.path.splitext(name)
             self.digits.append((name, Image.open(file)))
             logging.log(VERBOSE, "Loaded digit: {0}".format(name))
-
         if grid is None:
             self.game_window = get_game_window()
             self.game_center = (int((self.game_window[2] - self.game_window[0]) / 2) + self.game_window[0],
@@ -144,28 +125,23 @@ class Grid:
 
             self.set_grid_pos()
 
+            if calibrate:
+                self.calibrate()
+
             #Move the mouse away
             win32api.SetCursorPos((self.xoffset - 50, self.yoffset - 50))
             time.sleep(0.050)
             screengrab = ImageGrab.grab()
 
-            # Let's try to adjust the offsets to see if there's a more accurate position.
-            logging.info("Searching for good reference point...")
+            # Adjust the offset.
+            logging.info("Searching for top left item...")
             logging.log(VERBOSE, "Searching around {0},{1}".format(self.xoffset, self.yoffset))
-            griditem, best_accuracy = guess_grid_item(get_avg_pixel(screengrab, self.xoffset, self.yoffset))
-            best_x = self.xoffset
-            best_y = self.yoffset
-            for posx, posy in search_offset(radius=5, offsetx=self.xoffset, offsety=self.yoffset):
-                griditem, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
-                if accuracy > best_accuracy:
-                    best_accuracy = accuracy
-                    best_x = posx
-                    best_y = posy
-                if best_accuracy > 0.99:
-                    break
-
-            self.xoffset = best_x
-            self.yoffset = best_y
+            griditem, offsetx, offsety = self.detect_item_type(screengrab, self.xoffset, self.yoffset, radius=20)
+            if griditem is None:
+                logging.error('Failed to find top left item.')
+                sys.exit(1)
+            self.xoffset += offsetx
+            self.yoffset += offsety
             logging.log(VERBOSE, "Centered on {0},{1}, item {2}".format(self.xoffset, self.yoffset, griditem.name))
 
             if not self.update():
@@ -174,6 +150,19 @@ class Grid:
         else:
             #Use the supplied grid.
             self.grid = grid
+
+    @staticmethod
+    def detect_item_type(screengrab, x, y, radius=2):
+        searchx = x + grid_compare_box[0]
+        searchy = y + grid_compare_box[1]
+        images = []
+        for itemtype in Grid.GridItemTypes:
+            images.append((itemtype, itemtype.image))
+        itemtype, x, y = detect_image(screengrab, images, searchx, searchy, radius=radius)
+        offsetx = x - searchx
+        offsety = y - searchy
+        logging.debug("Found {} at offset {},{}".format(itemtype, offsetx, offsety))
+        return itemtype, offsetx, offsety
 
     def set_grid_pos(self):
         self.xoffset = None
@@ -199,24 +188,24 @@ class Grid:
 
     def update(self, compareprevious=False):
         screengrab = ImageGrab.grab()
-        lowest_accuracy = 1.00
         newgrid = []
         item_changed = False
+        update_failed = 0
         for x in range(5):
             column = []
             for y in range(5):
                 posx = self.xoffset + (x * 50)
                 posy = self.yoffset + (y * 50)
-                griditemtype, accuracy = guess_grid_item(get_avg_pixel(screengrab, posx, posy))
-                column.append(griditemtype)
-                if accuracy < lowest_accuracy:
-                    lowest_accuracy = accuracy
-                if compareprevious and griditemtype != self.grid[x][y]:
+                griditemtype, offsetx, offsety = self.detect_item_type(screengrab, posx, posy)
+                if griditemtype is None:
+                    update_failed += 1
+                elif compareprevious and griditemtype != self.grid[x][y]:
                     item_changed = True
+                column.append(griditemtype)
             newgrid.append(column)
 
-        if lowest_accuracy < 0.58:
-            logging.log(VERBOSE, "Lowest accuracy too low: {0}".format(lowest_accuracy))
+        if update_failed > 0:
+            logging.log(VERBOSE, "Failed to update the grid for {} items".format(update_failed))
             return False
         if compareprevious and not item_changed:
             logging.warning("Grid did not change.")
@@ -619,3 +608,51 @@ class Grid:
         duration = time.time() - startime
         logging.info("Moves complete, total time: {0:.3f}s time per move: {1:.3f}s".format(
             duration, duration / startenergy))
+
+    def calibrate(self):
+        # Select the top left item.
+        Mouse.click(self.xoffset, self.yoffset)
+        time.sleep(0.500)
+        # Search for the target reticule to get exact positioning.
+        x, y = image_search(ImageGrab.grab(), self.selected_image, self.xoffset - 25, self.yoffset - 25, radius=15)
+        if x != -1:
+            logging.debug("Reticule offset: {0}, {1}".format(x - self.xoffset + 25, y - self.yoffset + 25))
+        else:
+            logging.error("Failed to find target reticule.")
+            sys.exit(1)
+
+        # Alter our offset based upon the target reticule
+        self.xoffset = x + 25
+        self.yoffset = y + 25
+
+        # Deselect the top left item.
+        Mouse.click(self.xoffset, self.yoffset)
+        time.sleep(0.500)
+        # Move mouse away
+        Mouse.move(self.xoffset - 50, self.yoffset - 50)
+        time.sleep(0.100)
+
+        grid_images = []
+        screengrab = ImageGrab.grab()
+        for x in range(5):
+            for y in range(5):
+                image = screengrab.crop((
+                    self.xoffset + (x * 50) + grid_compare_box[0],
+                    self.yoffset + (y * 50) + grid_compare_box[1],
+                    self.xoffset + (x * 50) + grid_compare_box[2],
+                    self.yoffset + (y * 50) + grid_compare_box[3],
+                ))
+                match = False
+                for image2 in grid_images:
+                    if image_search(image, image2, 0, 0, radius=0)[0] != -1:
+                        match = True
+                        break
+                if not match:
+                    grid_images.append(image)
+
+        logging.info("Found {} item types".format(len(grid_images)))
+        image_count = 0
+        for image in grid_images:
+            image_count += 1
+            image.save('grid{}.png'.format(image_count))
+        sys.exit(0)
