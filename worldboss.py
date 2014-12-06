@@ -74,7 +74,7 @@ Mouse.click(x + 25, y + 25)
 time.sleep(0.010)
 
 # Wait for Join button.
-logging.log(VERBOSE, "Waiting for join button.")
+logging.log(VERBOSE, "Searching for join button.")
 timeout = time.time() + 30.0
 while time.time() < timeout:
     searchx = game_center[0] + 161
@@ -90,25 +90,29 @@ if time.time() > timeout:
 
 # Join
 Mouse.click(game_center[0] + 176, game_center[1] - 143)
-time.sleep(4.000)
+time.sleep(2.000)
 
 # Run up to line.
-Mouse.click(game_center[2] - 280, game_window[1] + 170)
+logging.info("Running up to line.")
+Mouse.click(game_window[2] - 280, game_window[1] + 170)
 time.sleep(0.100)
 # Auto attack
-Mouse.click(game_center[0] + 119, game_window[3] - 97)
+logging.info("Enabling auto attack.")
+Mouse.click(game_center[0] + 117, game_window[3] - 97)
 
+
+logging.info("Searching for Morale button...")
 timeout = time.time() + 15.0
 while time.time() < timeout:
-    morale_x, morale_y = image_search(ImageGrab.grab(), morale_image, game_center[0] - 128, game_window[3] - 112,
-                                      radius=5)
+    morale_x, morale_y = image_search(ImageGrab.grab(), morale_image, game_center[0] - 100, game_window[3] - 120,
+                                      radius=25)
     if morale_x != -1:
         logging.info("Found Morale button at {0},{1}")
         break
 
 # Morale boost
-for i in range(4):
-    timeout = time.time() + 5.0
+for i in range(6):
+    timeout = time.time() + 20.0
     while time.time() < timeout:
         x, y = image_search(ImageGrab.grab(), morale_image, morale_x, morale_y, radius=0)
         if x != -1:
@@ -117,5 +121,9 @@ for i in range(4):
     if x == -1:
         logging.info("Morale button did not appear as expected, assuming world boss is over.")
         break
-    Mouse.click(morale_x, morale_y)
-    time.sleep(180.0)
+    # Keep clicking till it seems to take.
+    timeout = time.time() + 10
+    while time.time() < timeout and Mouse.cursor_is_hand((morale_x, morale_y)):
+        Mouse.click(morale_x, morale_y)
+        time.sleep(1.0)
+    time.sleep(179.0)
