@@ -21,6 +21,7 @@ How many upgrade attempts to do.
 parser.add_argument('--favor1', action='store_true', help="Favor row 1.")
 parser.add_argument('--favor2', action='store_true', help="Favor row 2.")
 parser.add_argument('--favor3', action='store_true', help="Favor row 3.")
+parser.add_argument('--favorthreshold', type=int, default=0, help="Net amount required before favoring.")
 parser.add_argument('--ignore1', action='store_true', help="Ignore row 1.")
 parser.add_argument('--ignore2', action='store_true', help="Ignore row 2.")
 parser.add_argument('--ignore3', action='store_true', help="Ignore row 3.")
@@ -138,13 +139,14 @@ for i in range(1, args.attempts + 1):
         total_upgrade += digit_total
         logging.info("Gained {0} levels, {1} total, {2} per attempt.".format(
             digit_total, total_upgrade, total_upgrade / i))
-    elif digit_total == 0:
+    elif digit_total >= args.favorthreshold:
         shift = False
         for value, favor in digit_values:
             if favor and value > 0:
-                logging.info("Shifting points into favored row.")
+                logging.info("Shifting points into favored row. Net change: {}".format(digit_total))
                 shift = True
         if shift:
+            total_upgrade += digit_total
             save()
 
 
