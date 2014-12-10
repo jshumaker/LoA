@@ -43,6 +43,9 @@ class Mouse:
     @staticmethod
     def get_cursor(position=None):
         if position is not None:
+            # Jitter the mouse.
+            Mouse.move(position[0] + 1, position[1] + 1)
+            time.sleep(0.010)
             Mouse.move(*position)
             time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
@@ -51,6 +54,9 @@ class Mouse:
     @staticmethod
     def cursor_is_hand(position=None):
         if position is not None:
+            # Jitter the mouse.
+            Mouse.move(position[0] + 1, position[1] + 1)
+            time.sleep(0.010)
             Mouse.move(*position)
             time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
@@ -59,6 +65,9 @@ class Mouse:
     @staticmethod
     def cursor_is_arrow(position=None):
         if position is not None:
+            # Jitter the mouse.
+            Mouse.move(position[0] + 1, position[1] + 1)
+            time.sleep(0.010)
             Mouse.move(*position)
             time.sleep(0.010)
         flags, current_cursor, position = win32gui.GetCursorInfo()
