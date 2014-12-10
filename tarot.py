@@ -488,7 +488,7 @@ class TarotCards:
         # Click pairs to find cards, and eventually match.
         while matches_remaining > 0:
             # seek past any previously matched cards.
-            while self.cards_on_board[unknownpos].name is not None:
+            while unknownpos < len(self.cards_on_board) and self.cards_on_board[unknownpos].name is not None:
                 unknownpos += 1
             # Check if we know of any matches we can flip.
             for c1 in range(len(self.cards_on_board)):
@@ -534,7 +534,7 @@ class TarotCards:
                     break
             # Find next unknown.
             unknownpos += 1
-            while self.cards_on_board[unknownpos].name is not None:
+            while unknownpos < len(self.cards_on_board) and self.cards_on_board[unknownpos].name is not None:
                 unknownpos += 1
             if not matched:
                 # No match known, let's detect another card.
