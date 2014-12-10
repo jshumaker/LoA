@@ -18,16 +18,12 @@ parser = argparse.ArgumentParser(description='Automatically spend elemental ston
 parser.add_argument('attempts', type=int, help="""
 How many upgrade attempts to do.
 """)
-parser.add_argument('--favor1', action='store_true', help="Favor row 1.")
-parser.add_argument('--favor2', action='store_true', help="Favor row 2.")
-parser.add_argument('--favor3', action='store_true', help="Favor row 3.")
+parser.add_argument('--favor', help="List of rows to favor and the order to favor them in, separated by ,")
 parser.add_argument('--favorthreshold', type=int, default=0, help="Net amount required before favoring.")
 parser.add_argument('--ignore1', action='store_true', help="Ignore row 1.")
 parser.add_argument('--ignore2', action='store_true', help="Ignore row 2.")
 parser.add_argument('--ignore3', action='store_true', help="Ignore row 3.")
-parser.add_argument('--debug', action='store_true', help="""
-Enable debug mode, a element.log file will be output with extra details.
-""")
+parser.add_argument('--debug', action='store_true', help="Output in depth information to the log file.")
 args = parser.parse_args()
 
 
@@ -35,6 +31,12 @@ loglevel = VERBOSE
 if args.debug:
     loglevel = logging.DEBUG
 logconfig('element', loglevel)
+
+favor = []
+if args.favor:
+    for f in args.favor.split(','):
+        favor.append(int(f))
+
 
 upgrade_offset = (146, 225)
 upgrade_image = Image.open('element/Upgrade.png')
@@ -66,9 +68,9 @@ upgrade_pos = (upgrade_pos[0] + int(upgrade_image.size[0] / 2), upgrade_pos[1] +
 save_pos = (upgrade_pos[0] + 139, upgrade_pos[1])
 
 digit_positions = [
-    ((game_center[0] + 387, game_center[1] + 55), args.ignore1, args.favor1),
-    ((game_center[0] + 387, game_center[1] + 80), args.ignore2, args.favor2),
-    ((game_center[0] + 387, game_center[1] + 107), args.ignore3, args.favor3)
+    ((game_center[0] + 387, game_center[1] + 55), args.ignore1),
+    ((game_center[0] + 387, game_center[1] + 80), args.ignore2),
+    ((game_center[0] + 387, game_center[1] + 107), args.ignore3)
 ]
 
 digit_size = (14, 12)
@@ -89,10 +91,10 @@ total_upgrade = 0
 
 def save():
     Mouse.click(*save_pos)
-    time.sleep(0.050)
+    time.sleep(0.150)
     timeout = time.time() + 5.0
     while time.time() < timeout and Mouse.cursor_is_hand(save_pos):
-        time.sleep(0.050)
+        time.sleep(0.150)
         Mouse.click(*save_pos)
     time.sleep(0.500)
     if Mouse.cursor_is_hand(save_pos):
@@ -109,7 +111,7 @@ for i in range(1, args.attempts + 1):
     if time.time() > timeout:
         logging.error("Error while waiting for upgrade button to respond.")
         sys.exit(1)
-    time.sleep(0.150)
+    time.sleep(0.250)
     # Get the digit values.
     timeout = time.time() + 8.0
     failure = False
@@ -117,8 +119,9 @@ for i in range(1, args.attempts + 1):
         digit_total = 0
         screengrab = ImageGrab.grab()
         digit_values = []
-        for pos, ignore, favor in digit_positions:
+        for pos, ignore in digit_positions:
             if ignore:
+                digit_values.append(0)
                 continue
             name, x, y = detect_image(screengrab, digits, *pos, radius=3)
             if name is None:
@@ -127,7 +130,7 @@ for i in range(1, args.attempts + 1):
                 failure = True
                 break
             logging.log(VERBOSE, "Recognized digit: {0} Offset: {1}, {2}".format(name, x - pos[0], y - pos[1]))
-            digit_values.append((int(name), favor))
+            digit_values.append((int(name)))
             digit_total += int(name)
         if not failure:
             break
@@ -141,10 +144,14 @@ for i in range(1, args.attempts + 1):
             digit_total, total_upgrade, total_upgrade / i))
     elif digit_total >= args.favorthreshold:
         shift = False
-        for value, favor in digit_values:
-            if favor and value > 0:
+        for f in favor:
+            if digit_values[f - 1] > 0:
                 logging.info("Shifting points into favored row. Net change: {}".format(digit_total))
                 shift = True
+                break
+            elif digit_values[f - 1] < 0:
+                # If this isn't 0, we don't want to shift at all.
+                break
         if shift:
             total_upgrade += digit_total
             save()
