@@ -532,7 +532,10 @@ class TarotCards:
                     self.cards_on_board[unknownpos].matched = True
                     matched = True
                     break
+            # Find next unknown.
             unknownpos += 1
+            while self.cards_on_board[unknownpos].name is not None:
+                unknownpos += 1
             if not matched:
                 # No match known, let's detect another card.
                 if matches_remaining == 1:
