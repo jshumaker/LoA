@@ -223,6 +223,12 @@ class LeagueOfAngels:
         time.sleep(0.01)
         win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, position)
 
+    def mouse_move(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
+        x, y = self.game_to_client(x, y, xorient, yorient)
+        logging.debug('Moving mouse to {},{}'.format(x, y))
+        position = makelong(x, y)
+        win32gui.PostMessage(self.hwnd, win32con.WM_MOUSEMOVE, 0, position)
+
     def image_find(self, image, x, y, xorient=Orient.Left, yorient=Orient.Top, screenshot=None,
                    radius=2, threshold=None, great_threshold=None):
         """

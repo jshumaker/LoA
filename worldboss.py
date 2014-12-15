@@ -63,17 +63,25 @@ if not found:
 
 # Enter Daily Tasks
 game.click(x + 25, y + 25)
-time.sleep(0.010)
+time.sleep(0.500)
 
 # Wait for Join button.
 logging.log(VERBOSE, "Searching for join button.")
-timeout = time.time() + 10.0
+timeout = time.time() + 90.0
+reenter_timeout = time.time() + 4.5
 while time.time() < timeout:
     join_pos = game.image_find(join_image, 161, -150, xorient=Orient.Center, yorient=Orient.Center,
                                radius=5, threshold=15000, great_threshold=2000)
     if join_pos.x != -1:
         logging.log(VERBOSE, "Join button found, offset {0},{1}".format(join_pos.xoffset, join_pos.yoffset))
         break
+    if time.time() > reenter_timeout:
+        # We possibly brought up daily tasks too early, let's re-open it.
+        reenter_timeout = time.time() + 4.5
+        game.click(x + 25, y + 25)
+        time.sleep(1.500)
+        game.click(x + 25, y + 25)
+        time.sleep(0.500)
     time.sleep(0.200)
 if time.time() > timeout:
     logging.error("Timed out waiting for Join button.")
@@ -86,8 +94,9 @@ time.sleep(2.000)
 
 
 logging.info("Searching for Morale button...")
-timeout = time.time() + 15.0
+timeout = time.time() + 20.0
 while time.time() < timeout:
+    game.mouse_move(0, 0)
     morale_pos = game.image_find(morale_image, -95, 121, xorient=Orient.Center, yorient=Orient.Bottom,
                                  radius=5)
     if morale_pos.x != -1:
@@ -104,8 +113,9 @@ game.click(117, 97, xorient=Orient.Center, yorient=Orient.Bottom)
 
 # Morale boost
 for i in range(6):
-    timeout = time.time() + 20.0
+    timeout = time.time() + 30.0
     while time.time() < timeout:
+        game.mouse_move(0, 0)
         pos = game.image_find(morale_image, morale_pos.x, morale_pos.y, radius=0)
         if pos.x != -1:
             break
