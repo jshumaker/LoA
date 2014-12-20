@@ -11,7 +11,9 @@ from PIL import ImageGrab, Image
 import time
 from collections import namedtuple
 from enum import Enum
-from utility.screen import *
+import os.path
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 Rect = namedtuple('Rect', ['left', 'top', 'right', 'bottom'])
 FoundPosition = namedtuple('FoundPosition', ['x', 'y', 'xoffset', 'yoffset'])
@@ -19,7 +21,6 @@ FoundPosition = namedtuple('FoundPosition', ['x', 'y', 'xoffset', 'yoffset'])
 
 def makelong(low, high):
     return low | (high << 16)
-
 
 
 class SearchAlgorithm(Enum):
@@ -60,7 +61,66 @@ def search_offset(radius=2, offsetx=0, offsety=0, xradius=None, yradius=None, al
             for y in range(0 - yradius, yradius + 1):
                 yield (x + offsetx, y + offsety)
     else:
-        raise ArgumentError("Invalid search algorithm specified.")
+        raise ValueError("Invalid search algorithm specified.")
+
+
+def compare_images(i1, i2):
+    rms = 0.0
+    if i1.size != i2.size:
+        raise ValueError("Image sizes for comparison do not match. {0} vs {1}".format(i1.size, i2.size))
+    width, height = i1.size
+    for x in range(width):
+        for y in range(height):
+            pixel2 = i2.getpixel((x, y))
+            # Skip if fully transparent.
+            if len(pixel2) > 3 and pixel2[3] == 0:
+                continue
+            pixel1 = i1.getpixel((x, y))
+
+            pixel_rms = math.sqrt((pixel1[0] - pixel2[0])**2 + (pixel1[1] - pixel2[1])**2 + (pixel1[2] - pixel2[2])**2)
+            if len(pixel2) > 3:
+                # Second image has an alpha channel, let's scale our rms value by the alpha channel.
+                # This ignores fully transparent pixels, and can give less weight to partially transparent pixels.
+                rms += pixel_rms * pixel2[3] / 255
+            else:
+                rms += pixel_rms
+    return rms
+
+
+def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, great_threshold=None):
+    """
+    Search for an image in the screengrab starting at the given searchx and searchy coordinages, and expanding out
+    to the max distance of radius. Returned
+    :param screengrab:
+    :param image:
+    :param searchx:
+    :param searchy:
+    :param threshold: rms that the match must be below before a match can be possible.
+    :param radius:
+    :return: Coordinates of top left of image.
+    """
+    image_width, image_height = image.size
+    if threshold is None:
+        best_rms = image_width * image_height * 30.0
+    else:
+        best_rms = threshold
+
+    if great_threshold is None:
+        # use an automatic value based upon size.
+        great_threshold = image_width * image_height
+
+    best_x = -1
+    best_y = -1
+    for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy):
+        rms = compare_images(screengrab.crop((x, y, x + image_width, y + image_height)), image)
+        logging.debug("Image Search {0},{1}  rms: {2:>10.3f}".format(x, y, rms))
+        if best_rms is None or rms < best_rms:
+            best_y = y
+            best_x = x
+            best_rms = rms
+        if rms < great_threshold:
+            break
+    return best_x, best_y
 
 
 class Orient(Enum):
