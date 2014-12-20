@@ -82,6 +82,8 @@ class LeagueOfAngels:
         else:
             self.gamepos = 0, 0, screenshot.size[0], screenshot.size[1]
 
+        self.resources = {}
+
     def get_game_hwnd(self, auto=True):
         windows = []
 
@@ -248,6 +250,34 @@ class LeagueOfAngels:
             offsetx = 0
             offsety = 0
         return FoundPosition(pos[0], pos[1], offsetx, offsety)
+
+    def find_back_button(self):
+        if not "Back" in self.resources:
+            self.resources['Back'] = Image.open(script_dir + '/misc/Back.png')
+        # Arena
+        back_pos = self.image_find(self.resources['Back'], 73, 65, Orient.Right, Orient.Bottom)
+        # Domination
+        if back_pos.x == -1:
+            back_pos = self.image_find(self.resources['Back'], 135, 62, Orient.Center, Orient.Bottom)
+        return back_pos
+
+    def goto_homepage(self):
+        back_found = True
+        while back_found:
+            back_found = False
+            back_pos = self.find_back_button()
+            if back_pos.x != -1:
+                self.click(back_pos.x + 25, back_pos.y + 25)
+                back_found = True
+                time.sleep(2.000)
+
+        # Cycle between mount and character dialog to clear back to empty home page.
+        #self.keypress('c')
+        #time.sleep(5.0)
+        #self.keypress('m')
+        #time.sleep(5.0)
+        #self.keypress('m')
+
 
 
 if __name__ == "__main__":
