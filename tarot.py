@@ -398,10 +398,7 @@ class TarotCards:
     def wait_unflip(self, cardnum):
         cardpos = (self.gamecenter[0] + card_positions[self.level][cardnum][0] + int(card_width / 2),
                    self.gamecenter[1] + card_positions[self.level][cardnum][1] + 15)
-        while True:
-            Mouse.move(*cardpos)
-            if Mouse.cursor_is_hand():
-                break
+        while self.detect_card_back(cardnum, radius=1)[0] == -1:
             time.sleep(0.025)
 
     def play_level(self):
