@@ -12,6 +12,7 @@ import time
 from collections import namedtuple
 from enum import Enum
 import os.path
+import math
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
