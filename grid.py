@@ -144,7 +144,10 @@ class Grid:
             self.yoffset += offsety
             logging.log(VERBOSE, "Centered on {0},{1}, item {2}".format(self.xoffset, self.yoffset, griditem.name))
 
-            if not self.update():
+            timeout = time.time() + 10
+            while not self.update() and time.time() < timeout:
+                time.sleep(0.100)
+            if time.time() > timeout:
                 logging.error("Initial accuracy of board recognition is too low.")
                 sys.exit(1)
         else:
