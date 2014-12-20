@@ -219,7 +219,7 @@ class LeagueOfAngels:
         # Let's find the left edge
         left = -1
         blackcount = 0
-        for x in range(0, 200):
+        for x in range(0, 400):
             p = screenshot.getpixel((x, int(bottom / 2)))
             if p[0] == 0 and p[1] == 0 and p[2] == 0:
                 blackcount += 1
@@ -251,6 +251,16 @@ class LeagueOfAngels:
                 right -= bottom - y
                 bottom = y
                 break
+
+        # Game window can only be 1500 pixels wide at most, cap the right side based on this.
+        if right - left > 1500:
+            right = left + 1500
+
+        # Game window can only be 900 pixels high.
+        if bottom - top > 900:
+            offset = int((bottom - top - 900) / 2)
+            top += offset
+            bottom = top + 900
 
         logging.debug("Game position: {},{},{},{}".format(left, top, right, bottom))
         self.gamepos = Rect(left, top, right, bottom)
