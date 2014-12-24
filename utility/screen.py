@@ -247,7 +247,7 @@ def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, 
 
 
 def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=2, great_threshold=None,
-                 xradius=None, yradius=None, algorithm=SEARCH_SPIRAL):
+                 xradius=None, yradius=None, algorithm=SEARCH_SPIRAL, compare_regions=None):
     """
     Detect an image from a screengrab from among a set of images.
     :param screengrab:
@@ -269,21 +269,28 @@ def detect_image(screengrab, imageset, searchx, searchy, threshold=None, radius=
     if great_threshold is None:
         # use an automatic value based upon size.
         great_threshold = best_rms / 10.0
+
+    if compare_regions is None:
+        compare_regions = [(0, 0, image_width, image_height)]
     best_x = -1
     best_y = -1
     best_name = None
-    for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy,
-                              xradius=xradius, yradius=yradius, algorithm=algorithm):
-        for name, image in imageset:
-            image_width, image_height = image.size
-            rms = compare_images(screengrab.crop((x, y, x + image_width, y + image_height)), image)
-            logging.debug("Image Search {0},{1}  rms: {2:>10.3f} name: {3}".format(x, y, rms, name))
-            if best_rms is None or rms < best_rms:
-                best_y = y
-                best_x = x
-                best_name = name
-                best_rms = rms
-            if rms < great_threshold:
+    for region in compare_regions:
+        for x, y in search_offset(radius=radius, offsetx=searchx, offsety=searchy,
+                                  xradius=xradius, yradius=yradius, algorithm=algorithm):
+            for name, image in imageset:
+                image_region = image.crop(region)
+                screengrab_region = screengrab.crop((x + region[0], y + region[1], x + region[2], y + region[3]))
+                rms = compare_images(screengrab_region, image_region)
+                logging.debug("Image Search {0},{1}  rms: {2:>10.3f} name: {3}".format(x, y, rms, name))
+                if best_rms is None or rms < best_rms:
+                    best_y = y
+                    best_x = x
+                    best_name = name
+                    best_rms = rms
+                if rms < great_threshold:
+                    break
+            if best_name is not None:
                 break
         if best_name is not None:
             break
