@@ -230,7 +230,7 @@ def image_search(screengrab, image, searchx, searchy, threshold=None, radius=5, 
 
     if great_threshold is None:
         # use an automatic value based upon size.
-        great_threshold = image_width * image_height
+        great_threshold = image_width * image_height * 3
 
     best_x = -1
     best_y = -1
