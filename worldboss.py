@@ -30,6 +30,10 @@ morale_inactive_image = Image.open(os.path.join(script_dir, "misc/MoraleInactive
 
 game = LeagueOfAngels()
 
+
+# Return to the home screen.
+game.goto_homepage()
+
 # Let's orient the first icon.
 logging.log(VERBOSE, "Searching for first icon.")
 screenshot = game.capture_screenshot()
@@ -68,23 +72,28 @@ time.sleep(0.500)
 # Wait for Join button.
 logging.log(VERBOSE, "Searching for join button.")
 timeout = time.time() + 90.0
-reenter_timeout = time.time() + 4.5
+reenter_timeout = time.time() + 9.5
+click_count = 0
 while time.time() < timeout:
     join_pos = game.image_find(join_image, 161, -150, xorient=Orient.Center, yorient=Orient.Center,
-                               radius=5, threshold=15000, great_threshold=2000)
+                               radius=2, threshold=15000, great_threshold=2000)
     if join_pos.x != -1:
         logging.log(VERBOSE, "Join button found, offset {0},{1}".format(join_pos.xoffset, join_pos.yoffset))
         break
     if time.time() > reenter_timeout:
         # We possibly brought up daily tasks too early, let's re-open it.
+        # We also possibly closed it instead of opening it, so let's click just once to cycle between open and closed.
         reenter_timeout = time.time() + 4.5
         game.click(x + 25, y + 25)
+        click_count += 1
         time.sleep(1.500)
-        game.click(x + 25, y + 25)
-        time.sleep(0.500)
     time.sleep(0.200)
 if time.time() > timeout:
     logging.error("Timed out waiting for Join button.")
+    if click_count % 2 == 1:
+        game.click(x + 25, y + 25)
+        time.sleep(1.500)
+    game.capture_screenshot().save("failed_join.png")
     sys.exit(1)
 
 # Join
