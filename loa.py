@@ -1,3 +1,5 @@
+import win32api
+
 __author__ = 'Jody Shumaker'
 
 import argparse
@@ -132,10 +134,16 @@ class Orient(Enum):
     Bottom = 4
 
 
+class Mode(Enum):
+    Window = 0
+    Desktop = 1
+
+
 class LeagueOfAngels:
-    def __init__(self, auto=True, screenshot=None):
+    def __init__(self, auto=True, screenshot=None, mode=Mode.Desktop):
         self.hwnd = None
         self.gamepos = None
+        self.mode = mode
         self.screenshot = screenshot
         if screenshot is None:
             self.get_game_hwnd(auto=auto)
@@ -175,72 +183,94 @@ class LeagueOfAngels:
         else:
             self.hwnd = windows[0][0]
 
+        if self.mode == Mode.Desktop:
+            self.focus()
+
+    def focus(self):
+        # Make game window active.
+        win32gui.SetWindowPos(self.hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
+                              win32con.SWP_NOMOVE + win32con.SWP_NOSIZE + win32con.SWP_SHOWWINDOW)
+        win32gui.SetForegroundWindow(self.hwnd)
+        win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        time.sleep(0.250)
+
     def capture_screenshot(self):
         im = None
-        left, top, right, bot = win32gui.GetClientRect(self.hwnd)
-        w = right - left
-        h = bot - top
 
-        hwnddc = win32gui.GetWindowDC(self.hwnd)
-        mfcdc = win32ui.CreateDCFromHandle(hwnddc)
-        savedc = mfcdc.CreateCompatibleDC()
+        if self.mode == Mode.Window:
+            left, top, right, bot = win32gui.GetClientRect(self.hwnd)
+            w = right - left
+            h = bot - top
 
-        savebitmap = win32ui.CreateBitmap()
-        savebitmap.CreateCompatibleBitmap(mfcdc, w, h)
+            hwnddc = win32gui.GetWindowDC(self.hwnd)
+            mfcdc = win32ui.CreateDCFromHandle(hwnddc)
+            savedc = mfcdc.CreateCompatibleDC()
 
-        savedc.SelectObject(savebitmap)
+            savebitmap = win32ui.CreateBitmap()
+            savebitmap.CreateCompatibleBitmap(mfcdc, w, h)
 
-        # Change the line below depending on whether you want the whole window
-        # or just the client area.
-        result = windll.user32.PrintWindow(self.hwnd, savedc.GetSafeHdc(), 1)
-        logging.debug("PrintWindow result: {}".format(result))
+            savedc.SelectObject(savebitmap)
 
-        if result == 1:
-            bmpinfo = savebitmap.GetInfo()
-            logging.debug(bmpinfo)
-            bmpstr = savebitmap.GetBitmapBits(True)
+            # Change the line below depending on whether you want the whole window
+            # or just the client area.
+            result = windll.user32.PrintWindow(self.hwnd, savedc.GetSafeHdc(), 1)
+            logging.debug("PrintWindow result: {}".format(result))
 
-            im = Image.frombuffer(
-                'RGB',
-                (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-                bmpstr, 'raw', 'BGRX', 0, 1)
+            if result == 1:
+                bmpinfo = savebitmap.GetInfo()
+                logging.debug(bmpinfo)
+                bmpstr = savebitmap.GetBitmapBits(True)
 
-        win32gui.DeleteObject(savebitmap.GetHandle())
-        savedc.DeleteDC()
-        mfcdc.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, hwnddc)
+                im = Image.frombuffer(
+                    'RGB',
+                    (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
+                    bmpstr, 'raw', 'BGRX', 0, 1)
+
+            win32gui.DeleteObject(savebitmap.GetHandle())
+            savedc.DeleteDC()
+            mfcdc.DeleteDC()
+            win32gui.ReleaseDC(self.hwnd, hwnddc)
+        else:
+            im = ImageGrab.grab()
 
         return im
 
     def get_game_bbox(self):
         logging.debug("Searching for game bounding box within client area.")
         screenshot = self.capture_screenshot()
-        left, top, right, bottom = win32gui.GetClientRect(self.hwnd)
+        if self.mode == Mode.Window:
+            left, top, right, bottom = win32gui.GetClientRect(self.hwnd)
+        else:
+            clientleft, clienttop, clientright, clientbottom = win32gui.GetClientRect(self.hwnd)
+            left, top = win32gui.ClientToScreen(self.hwnd, (clientleft, clienttop))
+            right, bottom = win32gui.ClientToScreen(self.hwnd, (clientright, clientbottom))
         logging.debug("Client rect: {},{},{},{}".format(left, top, right, bottom))
         # Let's find the left edge
-        left = -1
         blackcount = 0
-        for x in range(0, 400):
-            p = screenshot.getpixel((x, int(bottom / 2)))
+        y = int((bottom - top) / 2) + top + 100
+        left_found = False
+        for x in range(left, left + 400):
+            p = screenshot.getpixel((x, y))
             if p[0] == 0 and p[1] == 0 and p[2] == 0:
                 blackcount += 1
             else:
                 if blackcount > 10:
                     left = x
+                    left_found = True
                     break
                 else:
                     blackcount = 0
-        if left == -1:
+        if not left_found:
             logging.error("Failed to find left edge.")
             raise Exception("Failed to find left edge.")
 
         # Let's find the top edge
-        for y in range(300, -1, -1):
+        for y in range(top + 300, top - 1, -1):
             p = screenshot.getpixel((left - 1, y))
             if p[0] != 0 or p[1] != 0 or p[2] != 0:
                 top = y + 1
                 break
-        if top == -1:
+        if top < 0:
             logging.debug("Pixels were black to 0, assuming full screen.")
             top = 0
 
@@ -291,16 +321,40 @@ class LeagueOfAngels:
     def click(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
         x, y = self.game_to_client(x, y, xorient, yorient)
         logging.debug('Clicking {},{}'.format(x, y))
-        position = makelong(x, y)
-        win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, position)
-        time.sleep(0.01)
-        win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, position)
+        if self.mode == Mode.Window:
+            position = makelong(x, y)
+            win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, position)
+            time.sleep(0.01)
+            win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, position)
+        else:
+            win32api.SetCursorPos((x, y))
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
+            win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
 
     def mouse_move(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
         x, y = self.game_to_client(x, y, xorient, yorient)
         logging.debug('Moving mouse to {},{}'.format(x, y))
-        position = makelong(x, y)
-        win32gui.PostMessage(self.hwnd, win32con.WM_MOUSEMOVE, 0, position)
+        if self.mode == Mode.Window:
+            position = makelong(x, y)
+            win32gui.PostMessage(self.hwnd, win32con.WM_MOUSEMOVE, 0, position)
+        else:
+            win32api.SetCursorPos((x, y))
+
+    arrow_cursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
+    hand_cursor = win32api.LoadCursor(0, win32con.IDC_HAND)
+
+    def check_cursor(self, x, y, cursor, xorient=Orient.Left, yorient=Orient.Top):
+        if self.mode != Mode.Desktop:
+            raise Exception("check_cursor can not be used in window mode, only desktop mode.")
+        x, y = self.game_to_client(x, y, xorient, yorient)
+        logging.debug('Checking if mouse cursor is hand at {},{}'.format(x, y))
+        # Jitter the mouse.
+        self.mouse_move(x + 1, y + 1)
+        time.sleep(0.010)
+        self.mouse_move(x, y)
+        time.sleep(0.010)
+        flags, current_cursor, position = win32gui.GetCursorInfo()
+        return current_cursor == cursor
 
     def image_find(self, image, x, y, xorient=Orient.Left, yorient=Orient.Top, screenshot=None,
                    radius=2, threshold=None, great_threshold=None):
@@ -363,9 +417,9 @@ if __name__ == "__main__":
         game.capture_screenshot().crop(game.gamepos).save("screenshot_{}.png".format(
             datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
     if args.mouse:
-        x, y = win32gui.GetCursorPos()
-        x, y = win32gui.ScreenToClient(game.hwnd, (x, y))
-        leftx, topy = game.client_to_game(x, y)
+        leftx, topy = win32gui.GetCursorPos()
+        leftx, topy = win32gui.ScreenToClient(game.hwnd, (leftx, topy))
+        leftx, topy = game.client_to_game(leftx, topy)
         centerx, centery = game.game_to_client(0, 0, Orient.Center, Orient.Center)
         centerx = x - centerx
         centery = y - centery
