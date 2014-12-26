@@ -29,9 +29,11 @@ ready_button = Image.open(script_dir + '/misc/Ready.png')
 
 while True:
     logging.log(VERBOSE, "Searching for Ready button...")
+    game.mouse_move(0, 0)
+    time.sleep(0.100)
     ready_pos = game.image_find(ready_button, 132, 435, xorient=Orient.Right, radius=1,
                                 threshold=200000, great_threshold=200000)
     if ready_pos.x != -1:
         logging.info("Ready button found ({},{}), clicking ready.".format(ready_pos.xoffset, ready_pos.yoffset))
         game.click(ready_pos.x + 40, ready_pos.y)
-    time.sleep(1.0)
+    time.sleep(5.0)
