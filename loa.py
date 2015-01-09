@@ -315,8 +315,24 @@ class LeagueOfAngels:
             raise Exception("Invalid yorient.")
         return x, y
 
-    def client_to_game(self, x, y):
-        return x - self.gamepos.left, y - self.gamepos.top
+    def client_to_game(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
+        if xorient == Orient.Center:
+            x -= int((self.gamepos.right - self.gamepos.left) / 2) + self.gamepos.left
+        elif xorient == Orient.Right:
+            x = abs(x - self.gamepos.right)
+        elif xorient == Orient.Left:
+            x -= self.gamepos.left
+        else:
+            raise Exception("Invalid xorient.")
+        if yorient == Orient.Center:
+            y -= int((self.gamepos.bottom - self.gamepos.top) / 2) + self.gamepos.top
+        elif yorient == Orient.Bottom:
+            y = abs(y - self.gamepos.bottom)
+        elif yorient == Orient.Top:
+            y -= self.gamepos.top
+        else:
+            raise Exception("Invalid yorient.")
+        return x, y
 
     def click(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
         x, y = self.game_to_client(x, y, xorient, yorient)
@@ -341,6 +357,12 @@ class LeagueOfAngels:
             win32gui.PostMessage(self.hwnd, win32con.WM_MOUSEMOVE, 0, position)
         else:
             win32api.SetCursorPos((x, y))
+
+    def mouse_get(self, xorient=Orient.Left, yorient=Orient.Top):
+        x, y = win32gui.GetCursorPos()
+        x, y = self.client_to_game(x, y, xorient, yorient)
+        logging.debug('Mouse at game pos {}({}),{}({})'.format(x, xorient, y, yorient))
+        return x, y
 
     arrow_cursor = win32api.LoadCursor(0, win32con.IDC_ARROW)
     hand_cursor = win32api.LoadCursor(0, win32con.IDC_HAND)
@@ -419,15 +441,10 @@ if __name__ == "__main__":
         game.capture_screenshot().crop(game.gamepos).save("screenshot_{}.png".format(
             datetime.datetime.now().strftime("%Y%m%d-%H%M%S")))
     if args.mouse:
-        leftx, topy = win32gui.GetCursorPos()
-        leftx, topy = win32gui.ScreenToClient(game.hwnd, (leftx, topy))
-        leftx, topy = game.client_to_game(leftx, topy)
-        centerx, centery = game.game_to_client(0, 0, Orient.Center, Orient.Center)
-        centerx = x - centerx
-        centery = y - centery
-        rightx, bottomy = game.game_to_client(0, 0, Orient.Right, Orient.Bottom)
-        rightx -= x
-        bottomy -= y
+        x, y = win32api.GetCursorPos()
+        leftx, topy = game.client_to_game(x, y, Orient.Left, Orient.Top)
+        centerx, centery = game.client_to_game(x, y, Orient.Center, Orient.Center)
+        rightx, bottomy = game.client_to_game(x, y, Orient.Right, Orient.Bottom)
         logging.info('X  Left: {:>5} Center: {:>5}  Right: {:>5}'.format(
             leftx, centerx, rightx
         ))
