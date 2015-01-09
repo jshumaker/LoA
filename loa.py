@@ -327,9 +327,11 @@ class LeagueOfAngels:
             time.sleep(0.01)
             win32gui.PostMessage(self.hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, position)
         else:
+            oldx, oldy = win32api.GetCursorPos()
             win32api.SetCursorPos((x, y))
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0)
             win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0)
+            win32api.SetCursorPos((oldx, oldy))
 
     def mouse_move(self, x, y, xorient=Orient.Left, yorient=Orient.Top):
         x, y = self.game_to_client(x, y, xorient, yorient)
