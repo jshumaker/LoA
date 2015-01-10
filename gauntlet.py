@@ -60,9 +60,9 @@ class Gauntlet:
             if first:
                 # We were first, we're now going to be second so we want to wait an extra 10 sceonds.
                 first = False
-                timeout = starttime + 130
+                timeout = starttime + 130.2
             else:
-                timeout = starttime + 110
+                timeout = starttime + 110.2
                 first = True
 
             while time.time() < timeout:
