@@ -32,10 +32,10 @@ while True:
     # Check if mouse is over ready button and if so move it aside to get rid of tooltip.
     mousex, mousey = game.mouse_get(xorient=Orient.Right)
     moved = False
-    if abs(mousex - 132) < 150 and abs(mousey - 435) < 150:
+    if 31 < mousex < 305 and 384 < mousey < 472:
         moved = True
         game.mouse_move(0, 0)
-        time.sleep(0.500)
+        time.sleep(0.100)
     ready_pos = game.image_find(ready_button, 132, 435, xorient=Orient.Right, radius=1,
                                 threshold=200000, great_threshold=200000)
     if ready_pos.x != -1:
