@@ -1,10 +1,10 @@
 teams:
     moo:
         - Xyern
-        - Kirya
-        - Corn
-        - Shep
         - Tiver
+        - Brooke
+        - Kirya
+        - Shep
     bluewaffle:
         - Ninja_Mage
         - Trinty
@@ -23,260 +23,109 @@ teams:
         - Vhal
         - PunShaFern
         - JackNg
-    ekimichi7:
+    ekimichi8:
+        - Trixter
+        - ActTheFool
         - Randy
-        - Serra
-        - Rebellion
         - Inuwashi
         - AMichael3343
+    Mizzery:
+        - Sylver
+        - Darkshades
+        - Kaylana
+        - DeadlyMonkey
+        - Quieara
+
 players:
     Tiver:
-        # ekimichi7
+        # Mizzery
+        Quieara: false
+        DeadlyMonkey: true
+        Sylver: true
+        Darkshades: true
+        Kaylana: true
+        # ekimichi8
         Inuwashi: false
-        AMichael3343: false
+        AMichael3343: true
+        Trixter: true
+        ActTheFool: true
         Randy: true
-        Serra: true
-        Rebellion: true
         # Afterlife
         Mars_Demo: false
         Hero: false
         Vhal: true
         JackNg: true
         PunShaFern: true
-        # TeamName
-        Salem: false
-        rumba: true
-        kamy5: true
-        Jacquelyn: true
-        Lezard: false
-        # bluewaffle
-        Ninja_Mage: true
-        Trinty: true
-        Lilliana: true
-        Knut: false
-        Limitless: true
-        # Legendary
-        icebow: false
-        Sepiroth: false
-        Serra: true
-        Draconic: true
-        Bhella: true
-        # PikachuSquad
-        Levita: true
-        Kyosuke: true
-        GOLDMOON: true
-        Alexxandria: false
-        Morrigan: true
-        # CryMeARiver
-        JayS8980: true
-        Izzeren: false
-        DeViL: true
-        Milpol: false
-        ActTheFool: true
-        # Revolt
-        Dnomyar: false
-        Dream: true
-        ssone: true
-        Dowik: true
-        HOALINH: true
-        # VintageAlpha
-        Zalaxa: false
-        Zyna: true
-        Synti: true
-        Submissive: true
-        Theresa: true
-        # QTeam
-        Quieara: false
-        Sylver: false
-        Sir_Lancelot: true
-        Obiwoncanoli: true 
-        Melky: true
-        # Misc
-        EyeCandy: false
-        Hoke: true
     Xyern:
-        # ekimichi7
-        Inuwashi: false
-        AMichael3343: true
-        Randy: true
-        Serra: true
-        Rebellion: true
-        # Afterlife
-        Mars_Demo: false
-        Hero: true
-        Vhal: true
-        JackNg: true
-        PunShaFern: true
-        # TeamName
-        Salem: true
-        rumba: true
-        kamy5: true
-        Jacquelyn: true
-        Lezard: false
-        # bluewaffle
-        Ninja_Mage: true
-        Trinty: true
-        Lilliana: true
-        Knut: false
-        Limitless: true
-        # Legendary
-        icebow: false
-        Sepiroth: true
-        Serra: true
-        Draconic: true
-        Bhella: true
-        # PikachuSquad
-        Levita: true
-        Kyosuke: true
-        GOLDMOON: true
-        Alexxandria: true
-        Morrigan: true
-        # CryMeARiver
-        JayS8980: false
-        Izzeren: true
-        DeViL: true
-        Milpol: true
-        ActTheFool: true
-        # Revolt
-        Dnomyar: false
-        Dream: true
-        ssone: true
-        Dowik: true
-        HOALINH: true
-        # VintageAlpha
-        Zalaxa: false
-        Zyna: true
-        Synti: true
-        Submissive: true
-        Theresa: true
-        # QTeam
+        # Mizzery
         Quieara: false
+        DeadlyMonkey: true
         Sylver: true
-        Sir_Lancelot: true
-        Obiwoncanoli: true 
-        Melky: true
-    Shep:
-        # ekimichi7
+        Darkshades: true
+        Kaylana: true
+        # ekimichi8
         Inuwashi: false
         AMichael3343: true
+        Trixter: true
+        ActTheFool: true
         Randy: true
-        Serra: true
-        Rebellion: true
         # Afterlife
         Mars_Demo: false
         Hero: true
         Vhal: true
         JackNg: true
         PunShaFern: true
-        # TeamName
-        Salem: true
-        rumba: true
-        kamy5: true
-        Jacquelyn: true
-        Lezard: true
-        # bluewaffle
-        Ninja_Mage: true
-        Trinty: true
-        Lilliana: true
-        Knut: true
-        Limitless: true
-        # Legendary
-        icebow: false
-        Sepiroth: true
-        Serra: true
-        Draconic: true
-        Bhella: true
-        # PikachuSquad
-        Levita: true
-        Kyosuke: true
-        GOLDMOON: true
-        Alexxandria: false
-        Morrigan: true
-        # CryMeARiver
-        JayS8980: false
-        Izzeren: true
-        DeViL: true
-        Milpol: true
-        ActTheFool: true
-        # Revolt
-        Dnomyar: false
-        Dream: true
-        ssone: true
-        Dowik: true
-        HOALINH: true
-        # VintageAlpha
-        Zalaxa: false
-        Zyna: false
-        Synti: true
-        Submissive: true
-        Theresa: true
-        # QTeam
+    Shep:
+        # Mizzery
         Quieara: false
-        Sylver: false
-        Sir_Lancelot: true
-        Obiwoncanoli: true 
-        Melky: true
+        DeadlyMonkey: true
+        Sylver: true
+        Darkshades: true
+        Kaylana: true
+        # ekimichi8
+        Inuwashi: true
+        AMichael3343: true
+        Trixter: true
+        ActTheFool: true
+        Randy: true
+        # Afterlife
+        Mars_Demo: false
+        Hero: true
+        Vhal: true
+        JackNg: true
+        PunShaFern: true
     Kirya:
-        # ekimichi7
+        # Mizzery
+        Quieara: false
+        DeadlyMonkey: false
+        Sylver: false
+        Darkshades: true
+        Kaylana: true
+        # ekimichi8
         Inuwashi: false
         AMichael3343: false
-        Randy: false
-        Serra: true
-        Rebellion: true
+        Trixter: true
+        ActTheFool: true
+        Randy: true
         # Afterlife
         Mars_Demo: false
         Hero: false
         Vhal: false
         JackNg: false
         PunShaFern: true
-        # TeamName
-        Salem: false
-        rumba: true
-        kamy5: true
-        Jacquelyn: true
-        Lezard: false
-        # bluewaffle
-        Ninja_Mage: false
-        Trinty: false
-        Lilliana: false
-        Knut: false
-        Limitless: false
-        # Legendary
-        icebow: false
-        Sepiroth: false
-        Serra: false
-        Draconic: true
-        Bhella: true
-        # PikachuSquad
-        Levita: true
-        Kyosuke: true
-        GOLDMOON: true
-        Alexxandria: false
-        Morrigan: false
-        # CryMeARiver
-        JayS8980: false
-        Izzeren: false
-        DeViL: true
-        Milpol: false
-        ActTheFool: true
-        # Revolt
-        Dnomyar: false
-        Dream: false
-        ssone: false
-        Dowik: true
-        HOALINH: true
-        # VintageAlpha
-        Zalaxa: false
-        Zyna: false
-        Synti: false
-        Submissive: true
-        Theresa: true
-        # QTeam
+    Brooke:
+        # Mizzery
         Quieara: false
+        DeadlyMonkey: false
         Sylver: false
-        Sir_Lancelot: false
-        Obiwoncanoli: true 
-        Melky: true
+        Darkshades: false
+        Kaylana: false
+        # ekimichi8
+        Inuwashi: false
+        AMichael3343: false
+        Trixter: true
+        ActTheFool: true
+        Randy: false
     Corn:
         # ekimichi7
         Inuwashi: false
