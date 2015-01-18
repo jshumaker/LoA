@@ -43,8 +43,8 @@ class Gauntlet:
 
     def play(self, first, rounds=15):
         round_count = 0
+        starttime = time.time()
         while round_count < rounds:
-            starttime = time.time()
             round_count += 1
             if first:
                 kill_count = 3
@@ -61,13 +61,13 @@ class Gauntlet:
             if first:
                 # We were first, we're now going to be second so we want to wait an extra 10 sceonds.
                 first = False
-                timeout = starttime + 130.1
+                starttime += 130.1
             else:
-                timeout = starttime + 110.1
+                starttime += 110.1
                 first = True
 
-            while time.time() < timeout:
-                time.sleep(0.500)
+            while time.time() < starttime:
+                time.sleep(0.100)
 
 gauntlet = Gauntlet()
 gauntlet.play(args.first, args.rounds)
