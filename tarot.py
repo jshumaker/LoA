@@ -558,7 +558,7 @@ class TarotCards:
                         self.wait_unflip(unknownpos)
                     unknownpos += 1
 
-    def play(self):
+    def play(self, buyflips=0):
         self.parse_flips()
         self.extraflips = 0
         if self.level == 0:
@@ -593,6 +593,11 @@ class TarotCards:
                     else:
                         sys.exit(1)
             self.play_level()
+            for i in range(buyflips):
+                logging.info('Buying flips...')
+                Mouse.click(self.gamepos[0] + 376, self.gamepos[1] + 60)
+                time.sleep(0.250)
+            buyflips = 0
             if self.level < len(flips_gained):
                 self.flips_left += flips_gained[self.level]
                 if self.freeflips < 0:
@@ -614,10 +619,8 @@ if __name__ == '__main__':
     parser.add_argument('--attempts', '-a', type=int, default=1, help="""
     How many attempts to do. Only continues upon a successful lvl 10 completion. Defaults to 1.
     """)
-    parser.add_argument('--skipstart', '-n', action='store_true', help="""
-    Broken currently.
-    Skip the start/next button click at the beginning, use when having script continue a level that is in-progress.
-    Also triggers automatic level detection.
+    parser.add_argument('--buyflips', '-b', type=int, default=0, help="""
+    A number of flips to buy after starting first attempt. Defaults to 0.
     """)
     parser.add_argument('--force', action='store_true', help="""
     Play a level even if not enough flips to complete it. Additionally
@@ -658,8 +661,11 @@ if __name__ == '__main__':
         print("Guessed {0} flips left.".format(tarot.flips_left))
         sys.exit(0)
 
+    buyflips = args.buyflips
+
     for i in range(args.attempts):
-        tarot.play()
+        tarot.play(buyflips)
         tarot.level = 0
+        buyflips = 0
         time.sleep(1.0)
 
