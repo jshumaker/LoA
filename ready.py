@@ -34,7 +34,7 @@ while True:
     moved = False
     if 31 < mousex < 305 and 384 < mousey < 472:
         moved = True
-        game.mouse_move(0, 0)
+        game.mouse_move(91, 378, xorient=Orient.Right)
         time.sleep(0.100)
     ready_pos = game.image_find(ready_button, 132, 435, xorient=Orient.Right, radius=1,
                                 threshold=200000, great_threshold=200000)
@@ -43,4 +43,4 @@ while True:
         game.click(ready_pos.x + 40, ready_pos.y)
     if moved:
         game.mouse_move(mousex, mousey, xorient=Orient.Right)
-    time.sleep(5.0)
+    time.sleep(2.0)
