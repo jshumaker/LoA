@@ -52,6 +52,7 @@ class Gauntlet:
                 kill_count = 2
             for i in range(kill_count):
                 timeout = time.time() + 10.0
+                logging.info("Attacking...")
                 while time.time() < timeout:
                     self.game.click(518, 125)
                     time.sleep(0.100)
@@ -60,9 +61,9 @@ class Gauntlet:
             if first:
                 # We were first, we're now going to be second so we want to wait an extra 10 sceonds.
                 first = False
-                timeout = starttime + 130.2
+                timeout = starttime + 130.1
             else:
-                timeout = starttime + 110.2
+                timeout = starttime + 110.1
                 first = True
 
             while time.time() < timeout:
