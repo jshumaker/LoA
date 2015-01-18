@@ -57,15 +57,18 @@ class Gauntlet:
                     self.game.click(518, 125)
                     time.sleep(0.100)
                 time.sleep(10.0)
+            if round_count >= rounds:
+                break
+
             #Wait between rounds
             if first:
                 # We were first, we're now going to be second so we want to wait an extra 10 sceonds.
                 first = False
-                starttime += 130.1
+                starttime += 130
             else:
-                starttime += 110.1
+                starttime += 110
                 first = True
-
+            logging.info("Waiting for next round...")
             while time.time() < starttime:
                 time.sleep(0.100)
 
