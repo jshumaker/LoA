@@ -29,18 +29,16 @@ ready_button = Image.open(script_dir + '/misc/Ready.png')
 
 while True:
     logging.log(VERBOSE, "Searching for Ready button...")
-    # Check if mouse is over ready button and if so move it aside to get rid of tooltip.
+
+    # Move the mouse out of the way.
     mousex, mousey = game.mouse_get(xorient=Orient.Right)
-    moved = False
-    if 31 < mousex < 305 and 384 < mousey < 472:
-        moved = True
-        game.mouse_move(91, 378, xorient=Orient.Right)
-        time.sleep(0.100)
+    game.mouse_move(91, 378, xorient=Orient.Right)
+    time.sleep(0.100)
     ready_pos = game.image_find(ready_button, 132, 435, xorient=Orient.Right, radius=1,
                                 threshold=200000, great_threshold=200000)
     if ready_pos.x != -1:
         logging.info("Ready button found ({},{}), clicking ready.".format(ready_pos.xoffset, ready_pos.yoffset))
         game.click(ready_pos.x + 40, ready_pos.y)
-    if moved:
-        game.mouse_move(mousex, mousey, xorient=Orient.Right)
-    time.sleep(2.0)
+    # Move the mouse back.
+    game.mouse_move(mousex, mousey, xorient=Orient.Right)
+    time.sleep(4.0)
