@@ -37,7 +37,7 @@ game.goto_homepage()
 # Let's orient the first icon.
 logging.log(VERBOSE, "Searching for first icon.")
 screenshot = game.capture_screenshot()
-first_icon_pos = game.image_find(icon_corner_image, 237, 8, xorient=Orient.Right, screenshot=screenshot,
+first_icon_pos = game.image_find(icon_corner_image, 299, 8, xorient=Orient.Right, screenshot=screenshot,
                                  radius=20, great_threshold=1000.0)
 
 if first_icon_pos.x == -1:
@@ -57,7 +57,7 @@ while not found and icon_count < 40:
     else:
         x -= 62
         if x < 310:
-            x = first_icon_pos.x
+            x = first_icon_pos.x - 62
             y += 70
     icon_count += 1
 
