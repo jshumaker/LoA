@@ -112,6 +112,10 @@ while time.time() < timeout:
         logging.info("Found Morale button at {},{}".format(morale_pos.xoffset, morale_pos.yoffset))
         break
 
+# Hide players
+logging.info("Hiding other players.")
+game.click(137, -111, xorient=Orient.Right, yorient=Orient.Center)
+time.sleep(0.500)
 # Run up to line.
 logging.info("Running up to line.")
 game.click(280, 170, xorient=Orient.Right)
@@ -120,6 +124,7 @@ time.sleep(1.000)
 logging.info("Enabling auto attack.")
 game.click(117, 97, xorient=Orient.Center, yorient=Orient.Bottom)
 
+logging.info('Monitoring for morale boost.')
 # Morale boost
 for i in range(6):
     timeout = time.time() + 30.0
@@ -138,4 +143,5 @@ for i in range(6):
                                                     morale_pos.x, morale_pos.y, radius=0).x == -1:
         game.click(morale_pos.x, morale_pos.y)
         time.sleep(1.0)
+    logging.info('Morale boosted.')
     time.sleep(179.0)
