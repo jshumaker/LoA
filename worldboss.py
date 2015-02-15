@@ -57,7 +57,7 @@ while not found and icon_count < 40:
     else:
         x -= 62
         if x < 310:
-            x = first_icon_pos.x - 62
+            x = first_icon_pos.x + 62
             y += 70
     icon_count += 1
 
