@@ -48,18 +48,23 @@ logging.log(VERBOSE, "First icon found, offset from expected: {0},{1}".format(fi
 # Find the daily tasks button.
 logging.log(VERBOSE, "Searching for daily tasks button.")
 found = False
-x, y = first_icon_pos.x, first_icon_pos.y
-icon_count = 0
-while not found and icon_count < 40:
-    if game.image_find(daily_tasks_image, x, y, radius=0, threshold=120000, screenshot=screenshot)[0] != -1:
-        logging.log(VERBOSE, "Daily tasks button found, {0},{1}".format(x, y))
-        found = True
+for i in range(12):
+    x, y = first_icon_pos.x, first_icon_pos.y
+    icon_count = 0
+    while not found and icon_count < 40:
+        if game.image_find(daily_tasks_image, x, y, radius=0, threshold=120000, screenshot=screenshot)[0] != -1:
+            logging.log(VERBOSE, "Daily tasks button found, {0},{1}".format(x, y))
+            found = True
+        else:
+            x -= 62
+            if x < 310:
+                x = first_icon_pos.x + 62
+                y += 70
+        icon_count += 1
+    if found:
+        break
     else:
-        x -= 62
-        if x < 310:
-            x = first_icon_pos.x + 62
-            y += 70
-    icon_count += 1
+        time.sleep(10)
 
 if not found:
     logging.error("Failed to find daily tasks icon.")
