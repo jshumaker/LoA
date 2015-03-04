@@ -65,6 +65,7 @@ for i in range(12):
         break
     else:
         time.sleep(10)
+        screenshot = game.capture_screenshot()
 
 if not found:
     logging.error("Failed to find daily tasks icon.")
