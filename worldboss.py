@@ -34,31 +34,36 @@ game = LeagueOfAngels()
 # Return to the home screen.
 game.goto_homepage()
 
-# Let's orient the first icon.
-logging.log(VERBOSE, "Searching for first icon.")
 screenshot = game.capture_screenshot()
-first_icon_pos = game.image_find(icon_corner_image, 299, 8, xorient=Orient.Right, screenshot=screenshot,
-                                 radius=20, great_threshold=1000.0)
+calibrated = False
+xreset = game.gamepos.right - 237 - game.gamepos.left
+yreset = 8
 
-if first_icon_pos.x == -1:
-    logging.error("Failed to find first icon.")
-    sys.exit(1)
-logging.log(VERBOSE, "First icon found, offset from expected: {0},{1}".format(first_icon_pos.xoffset,
-                                                                              first_icon_pos.yoffset))
 # Find the daily tasks button.
 logging.log(VERBOSE, "Searching for daily tasks button.")
 found = False
 for i in range(12):
-    x, y = first_icon_pos.x, first_icon_pos.y
+    x, y = xreset, yreset
     icon_count = 0
     while not found and icon_count < 40:
+        if not calibrated:
+            icon_corner = game.image_find(icon_corner_image, x, y, screenshot=screenshot,
+                                          radius=8, great_threshold=1000.0)
+            if icon_corner.x != 1:
+                x += icon_corner.xoffset
+                xreset += icon_corner.xoffset
+                y += icon_corner.yoffset
+                yreset += icon_corner.yoffset
+                calibrated = True
+                logging.log(VERBOSE, "Icon corner found, offset from expected: {0},{1}".format(
+                    icon_corner.xoffset, icon_corner.yoffset))
         if game.image_find(daily_tasks_image, x, y, radius=0, threshold=120000, screenshot=screenshot)[0] != -1:
             logging.log(VERBOSE, "Daily tasks button found, {0},{1}".format(x, y))
             found = True
         else:
             x -= 62
             if x < 310:
-                x = first_icon_pos.x + 62
+                x = xreset
                 y += 70
         icon_count += 1
     if found:
